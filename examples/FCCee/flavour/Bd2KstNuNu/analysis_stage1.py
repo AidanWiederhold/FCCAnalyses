@@ -19,7 +19,7 @@ print ('podio    ',_pod)
 print ('fccana   ',_fcc)
 
 ROOT.gInterpreter.ProcessLine('''
-TMVA::Experimental::RBDT<> bdt("Bd2KstNuNu_BDT", "xgb_bdt_vtx.root");
+TMVA::Experimental::RBDT<> bdt("Bd2KstNuNu_BDT", "root://eospublic.cern.ch//eos/experiment/fcc/ee/analyses/case-studies/flavour/Bd2KstNuNu/xgb_bdt_vtx.root");
 computeModel = TMVA::Experimental::Compute<18, float>(bdt);
 ''')
 
@@ -405,6 +405,7 @@ if __name__ == "__main__":
             n_events+=tt.GetEntries()
         n_cpus=8
     else:
+        print(f"WARNING: Cannot use multi-threading when running over a finite set of events. Setting n_cpus to 1.")
         n_cpus=1
 
     print("===============================STARTUP SUMMARY===============================")
@@ -412,6 +413,7 @@ if __name__ == "__main__":
     print(f"Output File       : {args.output}")
     print(f"Events to process : {n_events}")
     print(f"MVA Cut           : {args.MVA_cut}")
+    print(f"Number of CPUs    : {n_cpus}")
     print("=============================================================================")
 
     import time
