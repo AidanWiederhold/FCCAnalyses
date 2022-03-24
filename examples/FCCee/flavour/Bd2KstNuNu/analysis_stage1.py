@@ -18,10 +18,8 @@ print ('edm4hep  ',_edm)
 print ('podio    ',_pod)
 print ('fccana   ',_fcc)
 
-MVAFilter="EVT_MVA1>0.6"
-
 ROOT.gInterpreter.ProcessLine('''
-TMVA::Experimental::RBDT<> bdt("Bd2KstNuNu_BDT", "/eos/experiment/fcc/ee/analyses/case-studies/flavour/Bd2KstNuNu/xgb_bdt_vtx.root");
+TMVA::Experimental::RBDT<> bdt("Bd2KstNuNu_BDT", "xgb_bdt_vtx.root");
 computeModel = TMVA::Experimental::Compute<18, float>(bdt);
 ''')
 
@@ -32,15 +30,24 @@ class analysis():
         self.outname = outname
         if ".root" not in outname:
             self.outname+=".root"
+        self.ncpu = ncpu
 
-        ROOT.ROOT.EnableImplicitMT(ncpu)
+        if ncpu>1: # MT and self.df.Range() is not allowed but MT must be enabled before constructing a df
+            ROOT.ROOT.EnableImplicitMT(ncpu) 
         ROOT.EnableThreadSafety()
         self.df = ROOT.RDataFrame("events", inputlist)
-        print (" init done, about to run")
+        print ("Input dataframe initialised!")
     #__________________________________________________________
-    def run(self):
-        #df2 = (self.df.Range(10)
-        df2 = (self.df
+    def run(self, n_events, MVA_cut):
+        print("Running...")
+        MVAFilter=f"EVT_MVA1>{MVA_cut}"
+
+        if self.ncpu==1:
+            df2 = self.df.Range(0, n_events)
+        else:
+            df2 = self.df
+        
+        df3 = (df2
                #############################################
                ##          Aliases for # in python        ##
                #############################################
@@ -354,6 +361,7 @@ class analysis():
                 "KPiCandidates_h2p", "KPiCandidates_h2q", "KPiCandidates_h2m", "KPiCandidates_h2type",
                 "KPiCandidates_h2d0", "KPiCandidates_h2z0",
                 
+                "EVT_MVA1",
                 ]:
             branchList.push_back(branchName)
 
@@ -362,86 +370,70 @@ class analysis():
         #opts.fCompressionLevel = 3
         #opts.fAutoFlush = -1024*1024*branchList.size()
         #df2.Snapshot("events", self.outname, branchList, opts)
-        df2.Snapshot("events", self.outname, branchList)
+        df3.Snapshot("events", self.outname, branchList)
 
 # example call for standalone file
-# python examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py p8_ee_Zbb_Bd2KstNuNu_stage1.root /eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_035370064.root
-
-
-
-
+# python ./FCCAnalyses/examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py --output p8_ee_Zbb_Bd2KstNuNu_stage1.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_035370064.root --MVA_cut 0.6
 
 if __name__ == "__main__":
 
-    if len(sys.argv)<3:
-        print ("usage:")
-        print ("python ",sys.argv[0]," output.root input.root")
-        print ("python ",sys.argv[0]," output.root \"inputdir/*.root\"")
-        print ("python ",sys.argv[0]," output.root file1.root file2.root file3.root <nevents>")
-        sys.exit(3)
+    import argparse
+    parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--input',nargs="+", required=True, help='Select the input file(s).')
+    parser.add_argument('--output', type=str, required=True, help='Select the output file.')
+    parser.add_argument('--MVA_cut', default = -1., type=float, help='Choose the MVA cut.')
+    parser.add_argument('--n_events', default = 0, type=int, help='Choose the number of events to process.')
+    args = parser.parse_args()
 
-
-    print ("Create dataframe object from ", )
-    fileListRoot = ROOT.vector('string')()
-    nevents=0
-
-    print("===============================", sys.argv[2])
-
-    if len(sys.argv)==3 and "*" in sys.argv[2]:
+    input_files = ROOT.vector('string')()
+    if "*" in args.input:
         import glob
-        filelist = glob.glob(sys.argv[2])
-        for fileName in filelist:
-            fileListRoot.push_back(fileName)
-            print (fileName, " ",)
-            print (" ...")
-
-
-    elif len(sys.argv)>2:
-        for i in range(2,len(sys.argv)):
-            try:
-                nevents=int(sys.argv[i])
-                print ("nevents found (will be in the processed events branch in root tree):",nevents)
-            except ValueError:
-                fileListRoot.push_back(sys.argv[i])
-                print (sys.argv[i], " ",)
-                print (" ...")
-
-                         
-    outfile=sys.argv[1]
-    print("output file:  ",outfile)
-    if len(outfile.split("/"))>1:
+        file_list = glob.glob(args.input)
+        for file_name in file_list:
+            input_files.push_back(file_name)
+    else:
+        for inf in args.input:
+            input_files.push_back(inf)
+    if len(args.output.split("/"))>1:
         import os
         os.system("mkdir -p {}".format(outfile.replace(outfile.split("/")[-1],"")))
-
-    if nevents==0:
-        for f in fileListRoot:
+    n_events=args.n_events
+    if n_events==0:
+        for f in input_files:
             tf=ROOT.TFile.Open(str(f),"READ")
             tt=tf.Get("events")
-            nevents+=tt.GetEntries()
-    print ("nevents ", nevents)
-    
+            n_events+=tt.GetEntries()
+        n_cpus=8
+    else:
+        n_cpus=1
+
+    print("===============================STARTUP SUMMARY===============================")
+    print(f"Input File(s)     : {args.input}")
+    print(f"Output File       : {args.output}")
+    print(f"Events to process : {n_events}")
+    print(f"MVA Cut           : {args.MVA_cut}")
+    print("=============================================================================")
+
     import time
     start_time = time.time()
-    ncpus = 8
-    analysis = analysis(fileListRoot, outfile, ncpus)
-    analysis.run()
+    analysis = analysis(input_files, args.output, n_cpus)
+    analysis.run(n_events, args.MVA_cut)
 
     elapsed_time = time.time() - start_time
-    print  ("==============================SUMMARY==============================")
+    print  ("==============================COMPLETION SUMMARY=============================")
     print  ("Elapsed time (H:M:S)     :  ",time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-    print  ("Events Processed/Second  :  ",int(nevents/elapsed_time))
-    print  ("Total Events Processed   :  ",int(nevents))
-    print  ("===================================================================")
+    print  ("Events Processed/Second  :  ",int(n_events/elapsed_time))
+    print  ("Total Events Processed   :  ",int(n_events))
+    print  ("=============================================================================")
 
     
-    outf = ROOT.TFile( outfile, "update" )
+    outf = ROOT.TFile( args.output, "update" )
     meta = ROOT.TTree( "metadata", "metadata informations" )
     n = array( "i", [ 0 ] )
     meta.Branch( "eventsProcessed", n, "eventsProcessed/I" )
-    n[0]=nevents
+    n[0]=n_events
     meta.Fill()
     p = ROOT.TParameter(int)( "eventsProcessed", n[0])
     p.Write()
     outf.Write()
     outf.Close()
-
