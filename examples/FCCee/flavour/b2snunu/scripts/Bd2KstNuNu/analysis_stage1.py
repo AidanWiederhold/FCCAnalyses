@@ -377,15 +377,21 @@ class analysis():
 
 if __name__ == "__main__":
 
+<<<<<<< HEAD:examples/FCCee/flavour/b2snunu/scripts/Bd2KstNuNu/analysis_stage1.py
     print("Initialising...")
 
+=======
+>>>>>>> f792b71... Modify analysis script for local use and limiting the number of input events.:examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py
     import argparse
     parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input',nargs="+", required=True, help='Select the input file(s).')
     parser.add_argument('--output', type=str, required=True, help='Select the output file.')
     parser.add_argument('--MVA_cut', default = -1., type=float, help='Choose the MVA cut.')
     parser.add_argument('--n_events', default = 0, type=int, help='Choose the number of events to process.')
+<<<<<<< HEAD:examples/FCCee/flavour/b2snunu/scripts/Bd2KstNuNu/analysis_stage1.py
     parser.add_argument('--n_cpus', default = 8, type=int, help='Choose the number of cpus to use.')
+=======
+>>>>>>> f792b71... Modify analysis script for local use and limiting the number of input events.:examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py
     args = parser.parse_args()
 
     input_files = ROOT.vector('string')()
@@ -397,18 +403,29 @@ if __name__ == "__main__":
     else:
         for inf in args.input:
             input_files.push_back(inf)
+<<<<<<< HEAD:examples/FCCee/flavour/b2snunu/scripts/Bd2KstNuNu/analysis_stage1.py
     #if len(args.output.split("/"))>1:
     #    import os
     #    os.system("mkdir -p {}".format(outfile.replace(outfile.split("/")[-1],"")))
+=======
+    if len(args.output.split("/"))>1:
+        import os
+        os.system("mkdir -p {}".format(outfile.replace(outfile.split("/")[-1],"")))
+>>>>>>> f792b71... Modify analysis script for local use and limiting the number of input events.:examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py
     n_events=args.n_events
     if n_events==0:
         for f in input_files:
             tf=ROOT.TFile.Open(str(f),"READ")
             tt=tf.Get("events")
             n_events+=tt.GetEntries()
+<<<<<<< HEAD:examples/FCCee/flavour/b2snunu/scripts/Bd2KstNuNu/analysis_stage1.py
         n_cpus=args.n_cpus
     else:
         print(f"WARNING: Cannot use multi-threading when running over a finite set of events. Setting n_cpus to 1.")
+=======
+        n_cpus=8
+    else:
+>>>>>>> f792b71... Modify analysis script for local use and limiting the number of input events.:examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py
         n_cpus=1
 
     print("===============================STARTUP SUMMARY===============================")
@@ -416,7 +433,10 @@ if __name__ == "__main__":
     print(f"Output File       : {args.output}")
     print(f"Events to process : {n_events}")
     print(f"MVA Cut           : {args.MVA_cut}")
+<<<<<<< HEAD:examples/FCCee/flavour/b2snunu/scripts/Bd2KstNuNu/analysis_stage1.py
     print(f"Number of CPUs    : {n_cpus}")
+=======
+>>>>>>> f792b71... Modify analysis script for local use and limiting the number of input events.:examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py
     print("=============================================================================")
 
     import time
