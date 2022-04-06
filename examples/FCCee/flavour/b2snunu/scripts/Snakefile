@@ -1,0 +1,45 @@
+from snakemake.remote.XRootD import RemoteProvider as XRootDRemoteProvider
+XRootD = XRootDRemoteProvider(stay_on_remote=True)
+from config import *
+
+with open("./b2snunu/output/eos_cache.json") as inf:
+    eos_cache = json.load(inf)
+
+for event_type, decay_info in eos_cache.items():
+    for decay, info in decay_info.items():
+        samples.update(info["samples"])
+
+report: "b2snunu/workflow_report.rst"
+
+wildcard_constraints:
+    event_type = list_to_constraints(list(event_types.keys())),
+    decay_fname = list_to_constraints(decays_to_fnames(list(decays))),
+    decays = list_to_constraints(list(decays)),
+    sample = list_to_constraints(list(samples)),
+
+
+rule event_types_done:
+    input: expand(snakemake_flags+"{event_type}_done", event_type=event_types)
+    output: snakemake_flags+"all"
+    shell: "touch {output}"
+
+rule decays_done:
+    input: lambda wildcards: expand(snakemake_flags+"{{event_type}}/{decay}_done", decay=event_types[wildcards.event_type]["decays"])
+    output: temp(snakemake_flags+"{event_type}_done")
+    shell: "touch {output}"
+
+rule samples_done:
+    input: lambda wildcards: expand(outputs+"stage1/{{event_type}}{decay_fname}/{{decay}}/{sample}.root", decay_fname=decays_to_fnames([wildcards.decay]), sample=eos_cache[wildcards.event_type][wildcards.decay]["samples"])
+    output: temp(snakemake_flags+"{event_type}/{decay}_done")
+    shell: "touch {output}"
+
+# maybe a hadd rule?
+
+rule stage1:
+    input: XRootD.remote(MC+"{event_type}{decay_fname}/events_{sample}.root")
+    output: outputs+"stage1/{event_type}{decay_fname}/{decay}/{sample}.root"
+    log: logs+"stage1/{event_type}{decay_fname}/{decay}/{sample}.log"
+    benchmark: benchmarks+"stage1/{event_type}{decay_fname}/{decay}/{sample}.txt"
+    shell: "python {analysis_scripts}{wildcards.decay}/analysis_stage1.py --input {input} --output {output}"
+
+# TODO swap decay and event_type around to make mapping to analysis scripts easier
