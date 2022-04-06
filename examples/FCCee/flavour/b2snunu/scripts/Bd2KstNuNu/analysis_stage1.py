@@ -394,9 +394,9 @@ if __name__ == "__main__":
     else:
         for inf in args.input:
             input_files.push_back(inf)
-    if len(args.output.split("/"))>1:
-        import os
-        os.system("mkdir -p {}".format(outfile.replace(outfile.split("/")[-1],"")))
+    #if len(args.output.split("/"))>1:
+    #    import os
+    #    os.system("mkdir -p {}".format(outfile.replace(outfile.split("/")[-1],"")))
     n_events=args.n_events
     if n_events==0:
         for f in input_files:
