@@ -1,45 +1,92 @@
-from snakemake.remote.XRootD import RemoteProvider as XRootDRemoteProvider
-XRootD = XRootDRemoteProvider(stay_on_remote=True)
+#from snakemake.remote.XRootD import RemoteProvider as XRootDRemoteProvider
+#XRootD = XRootDRemoteProvider(stay_on_remote=True)
 from config import *
 
-with open("./b2snunu/output/eos_cache.json") as inf:
-    eos_cache = json.load(inf)
-
-for event_type, decay_info in eos_cache.items():
-    for decay, info in decay_info.items():
-        samples.update(info["samples"])
-
 report: "b2snunu/workflow_report.rst"
+
+with open("eos_cache.json") as inf:
+    eos_cache = json.load(inf)
 
 wildcard_constraints:
     event_type = list_to_constraints(list(event_types.keys())),
     decay_fname = list_to_constraints(decays_to_fnames(list(decays))),
-    decays = list_to_constraints(list(decays)),
-    sample = list_to_constraints(list(samples)),
+    decay = list_to_constraints(list(decays)),
+    decay_model = "(inclusive|signal)",
+    tuple_id = "\d+",
 
-
-rule event_types_done:
-    input: expand(snakemake_flags+"{event_type}_done", event_type=event_types)
+rule all:
+    input: expand(snakemake_flags+"{decay}_done", decay=decays)
     output: snakemake_flags+"all"
     shell: "touch {output}"
 
-rule decays_done:
-    input: lambda wildcards: expand(snakemake_flags+"{{event_type}}/{decay}_done", decay=event_types[wildcards.event_type]["decays"])
-    output: temp(snakemake_flags+"{event_type}_done")
+rule decays:
+    input: lambda wildcards: expand(snakemake_flags+"{{decay}}/{event_type}_done", event_type=list(event_types.keys()))
+    output: snakemake_flags+"{decay}_done"
     shell: "touch {output}"
 
-rule samples_done:
-    input: lambda wildcards: expand(outputs+"stage1/{{event_type}}{decay_fname}/{{decay}}/{sample}.root", decay_fname=decays_to_fnames([wildcards.decay]), sample=eos_cache[wildcards.event_type][wildcards.decay]["samples"])
-    output: temp(snakemake_flags+"{event_type}/{decay}_done")
+rule event_types:
+    input: lambda wildcards: expand(snakemake_flags+"{{decay}}/{{event_type}}/{decay_model}", decay_model=event_types[wildcards.event_type])
+    output: snakemake_flags+"{decay}/{event_type}_done"
     shell: "touch {output}"
 
-# maybe a hadd rule?
+rule decay_models:
+    input: lambda wildcards: expand(outputs+"stage1/{{decay}}/{{event_type}}/{{decay_model}}/{tuple_id}.root", tuple_id=blacklister(range(len(eos_cache[wildcards.decay][wildcards.event_type][wildcards.decay_model]["expected_output"])), tuple_id_blacklist[wildcards.decay][wildcards.event_type][wildcards.decay_model]))
+    output: temp(snakemake_flags+"{decay}/{event_type}/{decay_model}")
+    shell: "touch {output}"
+
+rule mva_plots:
+    input:
+        signal = lambda wildcards: expand(outputs+"stage1/{{decay}}/p8_ee_Zbb_ecm91/signal/{tuple_id}.root", tuple_id=blacklister(range(len(eos_cache[wildcards.decay]["p8_ee_Zbb_ecm91"]["signal"]["expected_output"])), tuple_id_blacklist[wildcards.decay]["p8_ee_Zbb_ecm91"]["signal"])),
+        inclusive_bbbar = lambda wildcards: expand(outputs+"stage1/{{decay}}/p8_ee_Zbb_ecm91/inclusive/{tuple_id}.root", tuple_id=blacklister(range(len(eos_cache[wildcards.decay]["p8_ee_Zbb_ecm91"]["inclusive"]["expected_output"])), tuple_id_blacklist[wildcards.decay]["p8_ee_Zbb_ecm91"]["inclusive"])),
+        inclusive_ccbar = lambda wildcards: expand(outputs+"stage1/{{decay}}/p8_ee_Zcc_ecm91/inclusive/{tuple_id}.root", tuple_id=blacklister(range(len(eos_cache[wildcards.decay]["p8_ee_Zcc_ecm91"]["inclusive"]["expected_output"])), tuple_id_blacklist[wildcards.decay]["p8_ee_Zcc_ecm91"]["inclusive"])),
+        inclusive_qqbar = lambda wildcards: expand(outputs+"stage1/{{decay}}/p8_ee_Zuds_ecm91/inclusive/{tuple_id}.root", tuple_id=blacklister(range(len(eos_cache[wildcards.decay]["p8_ee_Zuds_ecm91"]["inclusive"]["expected_output"])), tuple_id_blacklist[wildcards.decay]["p8_ee_Zuds_ecm91"]["inclusive"]))
+    output: outputs+"plots/mva/{decay}.png"
+    log: logs+"plots/mva/{decay}.log"
+    benchmark: benchmarks+"plots/mva/{decay}.txt"
+    shell: "python {analysis_scripts}/mva_plot.py --inclusive_bbbar {input.inclusive_bbbar} --inclusive_ccbar {input.inclusive_ccbar} --inclusive_qqbar {input.inclusive_qqbar} --signal {input.signal} --output {output} &> {log}"
 
 rule stage1:
-    input: XRootD.remote(MC+"{event_type}{decay_fname}/events_{sample}.root")
-    output: outputs+"stage1/{event_type}{decay_fname}/{decay}/{sample}.root"
-    log: logs+"stage1/{event_type}{decay_fname}/{decay}/{sample}.log"
-    benchmark: benchmarks+"stage1/{event_type}{decay_fname}/{decay}/{sample}.txt"
-    shell: "python {analysis_scripts}{wildcards.decay}/analysis_stage1.py --input {input} --output {output}"
+    output: outputs+"stage1/{decay}/{event_type}/{decay_model}/{tuple_id}.root"
+    log: logs+"stage1/{decay}/{event_type}/{decay_model}/{tuple_id}.log"
+    benchmark: benchmarks+"stage1/{decay}/{event_type}/{decay_model}/{tuple_id}.txt"
+    #shell: "python {analysis_scripts}/stage1_wrapper.py --eos_cache {input} --output {output} --decay {wildcards.decay} --decay_model {wildcards.decay_model} --event_type {wildcards.event_type} &> {log}"
+    run:
+        desired_index = eos_cache[wildcards.decay][wildcards.event_type][wildcards.decay_model]["expected_output"].index(output[0])
+        tuple_ids = eos_cache[wildcards.decay][wildcards.event_type][wildcards.decay_model]["samples"][desired_index]
+        input_location = f"{MC}{wildcards.event_type}{decay_model_to_fname(wildcards.decay_model, wildcards.decay)}/events_"
+        input_files = []
+        for tuple_id in tuple_ids:
+            input_files.append(f"{input_location}{tuple_id}.root")
+        cmd = "python {analysis_scripts}stage1.py --output {output} --input {input_files} --decay {wildcards.decay} &> {log}"
+        shell(cmd)
 
+# maybe a hadd rule?
+"""
+rule stage1:
+    input: outputs+"mc/{event_type}/{decay}/{tuple_id}.root"
+    output: outputs+"stage1/{event_type}{decay_fname}/{decay}/{tuple_id}.root"
+    log: logs+"stage1/{event_type}{decay_fname}/{decay}/{tuple_id}.log"
+    benchmark: benchmarks+"stage1/{event_type}{decay_fname}/{decay}/{tuple_id}.txt"
+    shell: "python {analysis_scripts}{wildcards.decay}/analysis_stage1.py --input {input} --output {output} &> {log}"
+"""
+
+
+# TODO swap decay and event_type around to make mapping to analysis scripts easier - e.g when decay is inclusive need to be able to point to which 
+"""
+rule stage1:
+    input: "eos_cache.json"
+    output: outputs+"stage1/{event_type}/{decay}/{tuple_id}.root"
+    log: logs+"stage1/{event_type}/{decay}/{tuple_id}.log"
+    benchmark: benchmarks+"stage1/{event_type}/{decay}/{tuple_id}.txt"
+    shell: "python {analysis_scripts}/stage1_wrapper.py --eos_cache {input} --output {output} --decay {wildcards.decay} --event_type {wildcards.event_type} &> {log}"
+"""
+# TODO swap decay and event_type around to make mapping to analysis scripts easier - e.g when decay is inclusive need to be able to point to which 
+"""
+rule input_mc:
+    input: outputs+"eos_cache.json"
+    output: outputs+"mc/{event_type}/{decay}/{tuple_id}.root"
+    log: logs+"mc/{event_type}/{decay}/{tuple_id}.log"
+    benchmark: benchmarks+"mc/{event_type}/{decay}/{tuple_id}.txt"
+    shell: "python {analysis_scripts}/initial_hadd.py --eos_cache {input} --output {output} &> {log}"
 # TODO swap decay and event_type around to make mapping to analysis scripts easier
+"""

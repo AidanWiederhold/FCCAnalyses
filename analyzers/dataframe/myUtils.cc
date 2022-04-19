@@ -977,7 +977,7 @@ ROOT::VecOps::RVec<FCCAnalysesComposite> myUtils::build_Bu2D0Pi(ROOT::VecOps::RV
 
     if (recop.at(d0index.at(0)).type==321)kaoncharge=recop.at(d0index.at(0)).charge;
     else if (recop.at(d0index.at(1)).type==321)kaoncharge=recop.at(d0index.at(1)).charge;
-    else std::cout <<"huston there iis a problem no kaon found myUtils::build_Bu2D0Pi" <<std::endl;
+    else std::cout <<"houston there is a problem no kaon found myUtils::build_Bu2D0Pi" <<std::endl;
     for (size_t j = 0; j < pions.size(); ++j) {
       if (ReconstructedParticle::get_p(recop.at(pions.at(j)))<1.)continue;
       if (kaoncharge!=recop.at(pions.at(j)).charge)continue;
@@ -2035,8 +2035,8 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> myUtils::build_Bd2KstNuNu(ROOT::VecOps
     int nobj_k=0;
     for (auto &r:p.reco_ind){
       if (recop.at(r).type==321 ){
-	nobj_k+=1;
-	charge_k+=recop.at(r).charge;
+	      nobj_k+=1;
+	      charge_k+=recop.at(r).charge;
       }
     }
 
@@ -2045,8 +2045,8 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> myUtils::build_Bd2KstNuNu(ROOT::VecOps
     int nobj_pi=0;
     for (auto &r:p.reco_ind){
       if (recop.at(r).type==211){
-	nobj_pi+=1;
-	charge_pi+=recop.at(r).charge;
+	      nobj_pi+=1;
+	      charge_pi+=recop.at(r).charge;
       }
     }
     if (nobj_pi!=1){counter+=1; continue;}
@@ -2081,8 +2081,8 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> myUtils::build_Bs2PhiNuNu(ROOT::VecOps
     int nobj_phi=0;
     for (auto &r:vertex.at(i).reco_ind){
       if (recop.at(r).type==321 ){
-	nobj_phi+=1;
-	charge_phi+=recop.at(r).charge;
+	      nobj_phi+=1;
+	      charge_phi+=recop.at(r).charge;
       }
     }
     //select candidates with exactly 2 kaons and charge 0 
