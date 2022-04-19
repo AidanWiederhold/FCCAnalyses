@@ -18,6 +18,7 @@ print ('edm4hep  ',_edm)
 print ('podio    ',_pod)
 print ('fccana   ',_fcc)
 
+#TODO change this to args.decay instead of Bd2KstNuNu
 ROOT.gInterpreter.ProcessLine('''
 TMVA::Experimental::RBDT<> bdt("Bd2KstNuNu_BDT", "root://eospublic.cern.ch//eos/experiment/fcc/ee/analyses/case-studies/flavour/Bd2KstNuNu/xgb_bdt_vtx.root");
 computeModel = TMVA::Experimental::Compute<18, float>(bdt);
@@ -38,7 +39,7 @@ class analysis():
         self.df = ROOT.RDataFrame("events", inputlist)
         print ("Input dataframe initialised!")
     #__________________________________________________________
-    def run(self, n_events, MVA_cut):
+    def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid):
         print("Running...")
         MVAFilter=f"EVT_MVA1>{MVA_cut}"
 
@@ -55,6 +56,7 @@ class analysis():
                .Alias("MCRecoAssociations1", "MCRecoAssociations#1.index")
                .Alias("Particle0", "Particle#0.index")
                .Alias("Particle1", "Particle#1.index")
+
 
                #############################################
                ##MC record to study the Z->bb events types##
@@ -88,6 +90,7 @@ class analysis():
                .Define("MC_eta", "MCParticle::get_eta(Particle)")
                .Define("MC_phi", "MCParticle::get_phi(Particle)")
                
+
                #############################################
                ##               Build MC Vertex           ##
                #############################################
@@ -102,10 +105,12 @@ class analysis():
                .Define("MC_Vertex_PDGmother",  "myUtils::get_MCpdgMotherMCVertex(MCVertexObject, Particle)")
                .Define("MC_Vertex_PDGgmother", "myUtils::get_MCpdgGMotherMCVertex(MCVertexObject, Particle)")
 
+
                #############################################
                ##              Build Reco Vertex          ##
                #############################################
                .Define("VertexObject", "myUtils::get_VertexObject(MCVertexObject,ReconstructedParticles,EFlowTrack_1,MCRecoAssociations0,MCRecoAssociations1)")
+
 
                #############################################
                ##          Build PV var and filter        ##
@@ -121,10 +126,12 @@ class analysis():
                #############################################
                .Define("RecoPartPID" ,"myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle)")
                
+
                #############################################
                ##    Build RECO P with PID at vertex      ##
                #############################################
                .Define("RecoPartPIDAtVertex" ,"myUtils::get_RP_atVertex(RecoPartPID, VertexObject)")
+
 
                #############################################
                ##         Build vertex variables          ##
@@ -168,25 +175,27 @@ class analysis():
                .Define("EVT_dPV2DVmax",   "myUtils::get_dPV2DV_max(Vertex_d2PV)")
                .Define("EVT_dPV2DVave",   "myUtils::get_dPV2DV_ave(Vertex_d2PV)")
                
+
                #############################################
                ##        Build Kstz -> KPi  candidates      ##
                #############################################
-               .Define("KPiCandidates",         "myUtils::build_Bd2KstNuNu(VertexObject,RecoPartPIDAtVertex)")
+               .Define(f"{candidates}Candidates",         f"myUtils::build_{decay}(VertexObject,RecoPartPIDAtVertex)")
+
 
                #############################################
                ##       Filter Kstz -> KPi candidates      ##
                ############################################# 
-               .Define("EVT_NKPi",              "float(myUtils::getFCCAnalysesComposite_N(KPiCandidates))")
-               .Filter("EVT_NKPi>0")
+               .Define(f"EVT_N{candidates}",              f"float(myUtils::getFCCAnalysesComposite_N({candidates}Candidates))")
+               .Filter(f"EVT_N{candidates}>0")
+
 
                #############################################
                ##    Attempt to add a truth match         ##
                #############################################
-               #.Define("TruthMatching" ,"myUtils::add_truthmatched2(KPiCandidates, MCParticles, MCRecoAssociations0, ReconstructedParticles, MCRecoAssociations1)")
-               .Define("TruthMatching" ,"myUtils::add_truthmatched2(KPiCandidates, Particle, VertexObject, MCRecoAssociations0, ReconstructedParticles, MCRecoAssociations1)")
+               #.Define("TruthMatching" ,f"myUtils::add_truthmatched2({candidates}Candidates, MCParticles, MCRecoAssociations0, ReconstructedParticles, MCRecoAssociations1)")
+               .Define("TruthMatching" ,f"myUtils::add_truthmatched2({candidates}Candidates, Particle, VertexObject, MCRecoAssociations0, ReconstructedParticles, MCRecoAssociations1)")
 
 
-               
                #############################################
                ##              Build the thrust           ##
                ############################################# 
@@ -257,58 +266,57 @@ class analysis():
                                                      "EVT_ThrustEmin_Ncharged", "EVT_ThrustEmax_Ncharged",
                                                      "EVT_ThrustEmin_Nneutral", "EVT_ThrustEmax_Nneutral",
                                                      "EVT_NtracksPV",           "EVT_NVertex",
-                                                     "EVT_NKPi",                "EVT_ThrustEmin_NDV",
+                                                     f"EVT_N{candidates}",                "EVT_ThrustEmin_NDV",
                                                      "EVT_ThrustEmax_NDV",      "EVT_dPV2DVmin",
                                                      "EVT_dPV2DVmax",           "EVT_dPV2DVave"))
                .Define("EVT_MVA1", "MVAVec.at(0)")
                .Filter(MVAFilter) 
 
-               .Define("KPiCandidates_mass",    "myUtils::getFCCAnalysesComposite_mass(KPiCandidates)")
-               .Define("KPiCandidates_q",       "myUtils::getFCCAnalysesComposite_charge(KPiCandidates)")
-               .Define("KPiCandidates_vertex",  "myUtils::getFCCAnalysesComposite_vertex(KPiCandidates)")
-               .Define("KPiCandidates_mcvertex","myUtils::getFCCAnalysesComposite_mcvertex(KPiCandidates,VertexObject)")
-               .Define("KPiCandidates_truth",   "myUtils::getFCCAnalysesComposite_truthMatch(KPiCandidates)")
-               .Define("KPiCandidates_px",      "myUtils::getFCCAnalysesComposite_p(KPiCandidates,0)")
-               .Define("KPiCandidates_py",      "myUtils::getFCCAnalysesComposite_p(KPiCandidates,1)")
-               .Define("KPiCandidates_pz",      "myUtils::getFCCAnalysesComposite_p(KPiCandidates,2)")
-               .Define("KPiCandidates_p",       "myUtils::getFCCAnalysesComposite_p(KPiCandidates,-1)")
-               .Define("KPiCandidates_B",       "myUtils::getFCCAnalysesComposite_B(KPiCandidates, VertexObject, RecoPartPIDAtVertex)")
+               .Define(f"{candidates}Candidates_mass",    f"myUtils::getFCCAnalysesComposite_mass({candidates}Candidates)")
+               .Define(f"{candidates}Candidates_q",       f"myUtils::getFCCAnalysesComposite_charge({candidates}Candidates)")
+               .Define(f"{candidates}Candidates_vertex",  f"myUtils::getFCCAnalysesComposite_vertex({candidates}Candidates)")
+               .Define(f"{candidates}Candidates_mcvertex",f"myUtils::getFCCAnalysesComposite_mcvertex({candidates}Candidates,VertexObject)")
+               .Define(f"{candidates}Candidates_truth",   f"myUtils::getFCCAnalysesComposite_truthMatch({candidates}Candidates)")
+               .Define(f"{candidates}Candidates_px",      f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates,0)")
+               .Define(f"{candidates}Candidates_py",      f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates,1)")
+               .Define(f"{candidates}Candidates_pz",      f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates,2)")
+               .Define(f"{candidates}Candidates_p",       f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates,-1)")
+               .Define(f"{candidates}Candidates_B",       f"myUtils::getFCCAnalysesComposite_B({candidates}Candidates, VertexObject, RecoPartPIDAtVertex)")
                
-               .Define("KPiCandidates_track",   "myUtils::getFCCAnalysesComposite_track(KPiCandidates, VertexObject)")
-               .Define("KPiCandidates_d0",      "myUtils::get_trackd0(KPiCandidates_track)")
-               .Define("KPiCandidates_z0",      "myUtils::get_trackz0(KPiCandidates_track)")
+               .Define(f"{candidates}Candidates_track",   f"myUtils::getFCCAnalysesComposite_track({candidates}Candidates, VertexObject)")
+               .Define(f"{candidates}Candidates_d0",      f"myUtils::get_trackd0({candidates}Candidates_track)")
+               .Define(f"{candidates}Candidates_z0",      f"myUtils::get_trackz0({candidates}Candidates_track)")
 
-               .Define("KPiCandidates_anglethrust", "myUtils::getFCCAnalysesComposite_anglethrust(KPiCandidates, EVT_thrust)")
-               .Define("CUT_hasCandEmin",           "myUtils::has_anglethrust_emin(KPiCandidates_anglethrust)")
+               .Define(f"{candidates}Candidates_anglethrust", f"myUtils::getFCCAnalysesComposite_anglethrust({candidates}Candidates, EVT_thrust)")
+               .Define("CUT_hasCandEmin",           f"myUtils::has_anglethrust_emin({candidates}Candidates_anglethrust)")
                .Filter("CUT_hasCandEmin>0")
                
-               .Define("KPiCandidates_h1px",   "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0, 0)")
-               .Define("KPiCandidates_h1py",   "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0, 1)")
-               .Define("KPiCandidates_h1pz",   "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0, 2)")
-               .Define("KPiCandidates_h1p",    "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0, -1)")
-               .Define("KPiCandidates_h1q",    "myUtils::getFCCAnalysesComposite_q(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0)")
-               .Define("KPiCandidates_h1m",    "myUtils::getFCCAnalysesComposite_mass(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0)")
-               .Define("KPiCandidates_h1type", "myUtils::getFCCAnalysesComposite_type(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 0)")
-               .Define("KPiCandidates_h1d0",   "myUtils::getFCCAnalysesComposite_d0(KPiCandidates, VertexObject, 0)")
-               .Define("KPiCandidates_h1z0",   "myUtils::getFCCAnalysesComposite_z0(KPiCandidates, VertexObject, 0)")
+               .Define(f"{candidates}Candidates_h1px",   f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0, 0)")
+               .Define(f"{candidates}Candidates_h1py",   f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0, 1)")
+               .Define(f"{candidates}Candidates_h1pz",   f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0, 2)")
+               .Define(f"{candidates}Candidates_h1p",    f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0, -1)")
+               .Define(f"{candidates}Candidates_h1q",    f"myUtils::getFCCAnalysesComposite_q({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0)")
+               .Define(f"{candidates}Candidates_h1m",    f"myUtils::getFCCAnalysesComposite_mass({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0)")
+               .Define(f"{candidates}Candidates_h1type", f"myUtils::getFCCAnalysesComposite_type({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 0)")
+               .Define(f"{candidates}Candidates_h1d0",   f"myUtils::getFCCAnalysesComposite_d0({candidates}Candidates, VertexObject, 0)")
+               .Define(f"{candidates}Candidates_h1z0",   f"myUtils::getFCCAnalysesComposite_z0({candidates}Candidates, VertexObject, 0)")
                
-               .Define("KPiCandidates_h2px",   "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1, 0)")
-               .Define("KPiCandidates_h2py",   "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1, 1)")
-               .Define("KPiCandidates_h2pz",   "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1, 2)")
-               .Define("KPiCandidates_h2p",    "myUtils::getFCCAnalysesComposite_p(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1, -1)")
-               .Define("KPiCandidates_h2q",    "myUtils::getFCCAnalysesComposite_q(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1)")
-               .Define("KPiCandidates_h2m",    "myUtils::getFCCAnalysesComposite_mass(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1)")
-               .Define("KPiCandidates_h2type", "myUtils::getFCCAnalysesComposite_type(KPiCandidates, VertexObject, RecoPartPIDAtVertex, 1)")
-               .Define("KPiCandidates_h2d0",   "myUtils::getFCCAnalysesComposite_d0(KPiCandidates, VertexObject, 1)")
-               .Define("KPiCandidates_h2z0",   "myUtils::getFCCAnalysesComposite_z0(KPiCandidates, VertexObject, 1)")
+               .Define(f"{candidates}Candidates_h2px",   f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1, 0)")
+               .Define(f"{candidates}Candidates_h2py",   f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1, 1)")
+               .Define(f"{candidates}Candidates_h2pz",   f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1, 2)")
+               .Define(f"{candidates}Candidates_h2p",    f"myUtils::getFCCAnalysesComposite_p({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1, -1)")
+               .Define(f"{candidates}Candidates_h2q",    f"myUtils::getFCCAnalysesComposite_q({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1)")
+               .Define(f"{candidates}Candidates_h2m",    f"myUtils::getFCCAnalysesComposite_mass({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1)")
+               .Define(f"{candidates}Candidates_h2type", f"myUtils::getFCCAnalysesComposite_type({candidates}Candidates, VertexObject, RecoPartPIDAtVertex, 1)")
+               .Define(f"{candidates}Candidates_h2d0",   f"myUtils::getFCCAnalysesComposite_d0({candidates}Candidates, VertexObject, 1)")
+               .Define(f"{candidates}Candidates_h2z0",   f"myUtils::getFCCAnalysesComposite_z0({candidates}Candidates, VertexObject, 1)")
                
-               .Define("TrueKPiBd_vertex",        "myUtils::get_trueVertex(MCVertexObject,Particle,Particle0, 313, 511)")
-               .Define("TrueKPiBd_track",         "myUtils::get_truetrack(TrueKPiBd_vertex, MCVertexObject, Particle)")
-               .Define("TrueKPiBd_d0",            "myUtils::get_trackd0(TrueKPiBd_track)")
-               .Define("TrueKPiBd_z0",            "myUtils::get_trackz0(TrueKPiBd_track)")
-
+               .Define(f"True{candidates}_vertex",        f"myUtils::get_trueVertex(MCVertexObject,Particle,Particle0, {child_pdgid}, {parent_pdgid})")
+               .Define(f"True{candidates}_track",         f"myUtils::get_truetrack(True{candidates}_vertex, MCVertexObject, Particle)")
+               .Define(f"True{candidates}_d0",            f"myUtils::get_trackd0(True{candidates}_track)")
+               .Define(f"True{candidates}_z0",            f"myUtils::get_trackz0(True{candidates}_track)")
            )
-        # select branches for output file
+        
         branchList = ROOT.vector('string')()
         for branchName in [
                 
@@ -328,7 +336,7 @@ class analysis():
                 "EVT_Thrust_Y",  "EVT_Thrust_YErr",
                 "EVT_Thrust_Z",  "EVT_Thrust_ZErr",
 
-                "EVT_NtracksPV", "EVT_NVertex", "EVT_NKPi",
+                "EVT_NtracksPV", "EVT_NVertex", f"EVT_N{candidates}",
                 
                 "EVT_dPV2DVmin","EVT_dPV2DVmax","EVT_dPV2DVave",
 
@@ -347,33 +355,24 @@ class analysis():
                 "Vertex_mass",
                 "DV_d0","DV_z0",
                 
-                "TrueKPiBd_vertex", "TrueKPiBd_d0", "TrueKPiBd_z0", 
+                f"True{candidates}_vertex", f"True{candidates}_d0", f"True{candidates}_z0", 
                 
-                "KPiCandidates_mass", "KPiCandidates_vertex", "KPiCandidates_mcvertex", "KPiCandidates_B",
-                "KPiCandidates_truth",
-                "KPiCandidates_px", "KPiCandidates_py", "KPiCandidates_pz", "KPiCandidates_p", "KPiCandidates_q",
-                "KPiCandidates_d0",  "KPiCandidates_z0","KPiCandidates_anglethrust",
+                f"{candidates}Candidates_mass", f"{candidates}Candidates_vertex", f"{candidates}Candidates_mcvertex", f"{candidates}Candidates_B",
+                f"{candidates}Candidates_truth",
+                f"{candidates}Candidates_px", f"{candidates}Candidates_py", f"{candidates}Candidates_pz", f"{candidates}Candidates_p", f"{candidates}Candidates_q",
+                f"{candidates}Candidates_d0",  f"{candidates}Candidates_z0",f"{candidates}Candidates_anglethrust",
                 
-                "KPiCandidates_h1px", "KPiCandidates_h1py", "KPiCandidates_h1pz",
-                "KPiCandidates_h1p", "KPiCandidates_h1q", "KPiCandidates_h1m", "KPiCandidates_h1type",
-                "KPiCandidates_h1d0", "KPiCandidates_h1z0",
-                "KPiCandidates_h2px", "KPiCandidates_h2py", "KPiCandidates_h2pz",
-                "KPiCandidates_h2p", "KPiCandidates_h2q", "KPiCandidates_h2m", "KPiCandidates_h2type",
-                "KPiCandidates_h2d0", "KPiCandidates_h2z0",
+                f"{candidates}Candidates_h1px", f"{candidates}Candidates_h1py", f"{candidates}Candidates_h1pz",
+                f"{candidates}Candidates_h1p", f"{candidates}Candidates_h1q", f"{candidates}Candidates_h1m", f"{candidates}Candidates_h1type",
+                f"{candidates}Candidates_h1d0", f"{candidates}Candidates_h1z0",
+                f"{candidates}Candidates_h2px", f"{candidates}Candidates_h2py", f"{candidates}Candidates_h2pz",
+                f"{candidates}Candidates_h2p", f"{candidates}Candidates_h2q", f"{candidates}Candidates_h2m", f"{candidates}Candidates_h2type",
+                f"{candidates}Candidates_h2d0", f"{candidates}Candidates_h2z0",
                 
                 "EVT_MVA1",
                 ]:
             branchList.push_back(branchName)
-
-        #opts = ROOT.RDF.RSnapshotOptions()
-        #opts.fCompressionAlgorithm = ROOT.ROOT.kLZ4
-        #opts.fCompressionLevel = 3
-        #opts.fAutoFlush = -1024*1024*branchList.size()
-        #df2.Snapshot("events", self.outname, branchList, opts)
         df3.Snapshot("events", self.outname, branchList)
-
-# example call for standalone file
-# python ./FCCAnalyses/examples/FCCee/flavour/Bd2KstNuNu/analysis_stage1.py --output p8_ee_Zbb_Bd2KstNuNu_stage1.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_035370064.root --MVA_cut 0.6
 
 if __name__ == "__main__":
 
@@ -386,7 +385,9 @@ if __name__ == "__main__":
     parser.add_argument('--MVA_cut', default = -1., type=float, help='Choose the MVA cut.')
     parser.add_argument('--n_events', default = 0, type=int, help='Choose the number of events to process.')
     parser.add_argument('--n_cpus', default = 8, type=int, help='Choose the number of cpus to use.')
+    parser.add_argument('--decay', required=True, type=str, help='Choose the decay to reconstruct.')
     args = parser.parse_args()
+
 
     input_files = ROOT.vector('string')()
     if "*" in args.input:
@@ -397,9 +398,6 @@ if __name__ == "__main__":
     else:
         for inf in args.input:
             input_files.push_back(inf)
-    #if len(args.output.split("/"))>1:
-    #    import os
-    #    os.system("mkdir -p {}".format(outfile.replace(outfile.split("/")[-1],"")))
     n_events=args.n_events
     if n_events==0:
         for f in input_files:
@@ -419,10 +417,13 @@ if __name__ == "__main__":
     print(f"Number of CPUs    : {n_cpus}")
     print("=============================================================================")
 
+    from config import decay_to_candidates, decay_to_pdgids
+    candidates = decay_to_candidates[args.decay]
+    child_pdgid, parent_pdgid = decay_to_pdgids[args.decay]
     import time
     start_time = time.time()
     analysis = analysis(input_files, args.output, n_cpus)
-    analysis.run(n_events, args.MVA_cut)
+    analysis.run(n_events, args.MVA_cut, args.decay, candidates, child_pdgid, parent_pdgid)
 
     elapsed_time = time.time() - start_time
     print  ("==============================COMPLETION SUMMARY=============================")
