@@ -18,12 +18,6 @@ print ('edm4hep  ',_edm)
 print ('podio    ',_pod)
 print ('fccana   ',_fcc)
 
-#TODO change this to args.decay instead of Bd2KstNuNu
-ROOT.gInterpreter.ProcessLine('''
-TMVA::Experimental::RBDT<> bdt("Bd2KstNuNu_BDT", "root://eospublic.cern.ch//eos/experiment/fcc/ee/analyses/case-studies/flavour/Bd2KstNuNu/xgb_bdt_vtx.root");
-computeModel = TMVA::Experimental::Compute<18, float>(bdt);
-''')
-
 class analysis():
 
     #__________________________________________________________
@@ -39,7 +33,7 @@ class analysis():
         self.df = ROOT.RDataFrame("events", inputlist)
         print ("Input dataframe initialised!")
     #__________________________________________________________
-    def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid):
+    def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid, training):
         print("Running...")
         MVAFilter=f"EVT_MVA1>{MVA_cut}"
 
@@ -259,19 +253,6 @@ class analysis():
                .Define("DV_d0",            "myUtils::get_trackd0(DV_tracks)")
                .Define("DV_z0",            "myUtils::get_trackz0(DV_tracks)")
 
-               # Build MVA 
-               .Define("MVAVec", ROOT.computeModel, ("EVT_ThrustEmin_E",        "EVT_ThrustEmax_E",
-                                                     "EVT_ThrustEmin_Echarged", "EVT_ThrustEmax_Echarged",
-                                                     "EVT_ThrustEmin_Eneutral", "EVT_ThrustEmax_Eneutral",
-                                                     "EVT_ThrustEmin_Ncharged", "EVT_ThrustEmax_Ncharged",
-                                                     "EVT_ThrustEmin_Nneutral", "EVT_ThrustEmax_Nneutral",
-                                                     "EVT_NtracksPV",           "EVT_NVertex",
-                                                     f"EVT_N{candidates}",                "EVT_ThrustEmin_NDV",
-                                                     "EVT_ThrustEmax_NDV",      "EVT_dPV2DVmin",
-                                                     "EVT_dPV2DVmax",           "EVT_dPV2DVave"))
-               .Define("EVT_MVA1", "MVAVec.at(0)")
-               .Filter(MVAFilter) 
-
                .Define(f"{candidates}Candidates_mass",    f"myUtils::getFCCAnalysesComposite_mass({candidates}Candidates)")
                .Define(f"{candidates}Candidates_q",       f"myUtils::getFCCAnalysesComposite_charge({candidates}Candidates)")
                .Define(f"{candidates}Candidates_vertex",  f"myUtils::getFCCAnalysesComposite_vertex({candidates}Candidates)")
@@ -317,9 +298,26 @@ class analysis():
                .Define(f"True{candidates}_z0",            f"myUtils::get_trackz0(True{candidates}_track)")
            )
         
+        if not training:
+            df4 = (df3
+               # Build MVA 
+               .Define("MVAVec", ROOT.computeModel, ("EVT_ThrustEmin_E",        "EVT_ThrustEmax_E",
+                                                     "EVT_ThrustEmin_Echarged", "EVT_ThrustEmax_Echarged",
+                                                     "EVT_ThrustEmin_Eneutral", "EVT_ThrustEmax_Eneutral",
+                                                     "EVT_ThrustEmin_Ncharged", "EVT_ThrustEmax_Ncharged",
+                                                     "EVT_ThrustEmin_Nneutral", "EVT_ThrustEmax_Nneutral",
+                                                     "EVT_NtracksPV",           "EVT_NVertex",
+                                                     f"EVT_N{candidates}",                "EVT_ThrustEmin_NDV",
+                                                     "EVT_ThrustEmax_NDV",      "EVT_dPV2DVmin",
+                                                     "EVT_dPV2DVmax",           "EVT_dPV2DVave"))
+               .Define("EVT_MVA1", "MVAVec.at(0)")
+               .Filter(MVAFilter)
+            )
+        else:
+            df4 = df3
+
         branchList = ROOT.vector('string')()
-        for branchName in [
-                
+        desired_branches = [
                 "MC_PDG","MC_M1","MC_M2","MC_n","MC_D1","MC_D2","MC_D3","MC_D4",
                 "MC_p","MC_pt","MC_px","MC_py","MC_pz","MC_eta","MC_phi",
                 "MC_orivtx_x","MC_orivtx_y","MC_orivtx_z", 
@@ -368,11 +366,12 @@ class analysis():
                 f"{candidates}Candidates_h2px", f"{candidates}Candidates_h2py", f"{candidates}Candidates_h2pz",
                 f"{candidates}Candidates_h2p", f"{candidates}Candidates_h2q", f"{candidates}Candidates_h2m", f"{candidates}Candidates_h2type",
                 f"{candidates}Candidates_h2d0", f"{candidates}Candidates_h2z0",
-                
-                "EVT_MVA1",
-                ]:
+                ]
+        if not training:
+            desired_branches.append("EVT_MVA1")
+        for branchName in desired_branches:
             branchList.push_back(branchName)
-        df3.Snapshot("events", self.outname, branchList)
+        df4.Snapshot("events", self.outname, branchList)
 
 if __name__ == "__main__":
 
@@ -386,8 +385,14 @@ if __name__ == "__main__":
     parser.add_argument('--n_events', default = 0, type=int, help='Choose the number of events to process.')
     parser.add_argument('--n_cpus', default = 8, type=int, help='Choose the number of cpus to use.')
     parser.add_argument('--decay', required=True, type=str, help='Choose the decay to reconstruct.')
+    parser.add_argument("--training", default=False, action="store_const", const=True, help="prepare tuples for BDT training.")
     args = parser.parse_args()
 
+    if not args.training:
+        ROOT.gInterpreter.ProcessLine(f'''
+        TMVA::Experimental::RBDT<> bdt("{args.decay}_BDT", "root://eospublic.cern.ch//eos/experiment/fcc/ee/analyses/case-studies/flavour/{args.decay}/xgb_bdt_vtx.root");
+        computeModel = TMVA::Experimental::Compute<18, float>(bdt);
+        ''')
 
     input_files = ROOT.vector('string')()
     if "*" in args.input:
@@ -410,10 +415,12 @@ if __name__ == "__main__":
         n_cpus=1
 
     print("===============================STARTUP SUMMARY===============================")
+    print(f"Training Mode     : {args.training}")
     print(f"Input File(s)     : {args.input}")
     print(f"Output File       : {args.output}")
     print(f"Events to process : {n_events}")
-    print(f"MVA Cut           : {args.MVA_cut}")
+    if not args.training:
+        print(f"MVA Cut           : {args.MVA_cut}")
     print(f"Number of CPUs    : {n_cpus}")
     print("=============================================================================")
 
@@ -423,7 +430,7 @@ if __name__ == "__main__":
     import time
     start_time = time.time()
     analysis = analysis(input_files, args.output, n_cpus)
-    analysis.run(n_events, args.MVA_cut, args.decay, candidates, child_pdgid, parent_pdgid)
+    analysis.run(n_events, args.MVA_cut, args.decay, candidates, child_pdgid, parent_pdgid, args.training)
 
     elapsed_time = time.time() - start_time
     print  ("==============================COMPLETION SUMMARY=============================")
