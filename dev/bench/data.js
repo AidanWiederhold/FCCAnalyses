@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1654867840948,
+  "lastUpdate": 1654867842727,
   "repoUrl": "https://github.com/AidanWiederhold/FCCAnalyses",
   "entries": {
     "Benchmark": [
@@ -254,6 +254,40 @@ window.BENCHMARK_DATA = {
             "unit": "Seconds",
             "range": 10,
             "extra": "Analysis path: examples/FCCee/flavour/Bc2TauNu"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aidanwiederhold@gmail.com",
+            "name": "Aidan Wiederhold",
+            "username": "AidanWiederhold"
+          },
+          "committer": {
+            "email": "aidanwiederhold@gmail.com",
+            "name": "Aidan Wiederhold",
+            "username": "AidanWiederhold"
+          },
+          "distinct": true,
+          "id": "4a1fbf75148757eeb47c545f618fff6e205665f1",
+          "message": "Move everything for the analysis to a single directory.",
+          "timestamp": "2022-06-10T14:21:38+01:00",
+          "tree_id": "c25aad011e184eafa99f5c594e722763bfb459df",
+          "url": "https://github.com/AidanWiederhold/FCCAnalyses/commit/4a1fbf75148757eeb47c545f618fff6e205665f1"
+        },
+        "date": 1654867842064,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "prod | Events processed per second: examples/FCCee/higgs/mH-recoil/mumu",
+            "value": 7.641252265656554,
+            "unit": "Evt/s"
+          },
+          {
+            "name": "prod | Events processed per second: examples/FCCee/flavour/Bc2TauNu",
+            "value": 6.306625641987956,
+            "unit": "Evt/s"
           }
         ]
       }
