@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1661637885089,
+  "lastUpdate": 1661638214623,
   "repoUrl": "https://github.com/AidanWiederhold/FCCAnalyses",
   "entries": {
     "Benchmark": [
@@ -540,6 +540,51 @@ window.BENCHMARK_DATA = {
             "name": "prod | Events processed per second: examples/FCCee/test",
             "value": 7.1116141366607355,
             "unit": "Evt/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aidanwiederhold@gmail.com",
+            "name": "Aidan Wiederhold",
+            "username": "AidanWiederhold"
+          },
+          "committer": {
+            "email": "aidanwiederhold@gmail.com",
+            "name": "Aidan Wiederhold",
+            "username": "AidanWiederhold"
+          },
+          "distinct": true,
+          "id": "aefdcee5ea5e464118a98c05478c1d2ccded828d",
+          "message": "Bkg plots but not yet completely weighted against sample size and BFs etc...",
+          "timestamp": "2022-08-27T22:54:08+01:00",
+          "tree_id": "71c3cfeb864ceb2587875dcdad7f5de57075a9b0",
+          "url": "https://github.com/AidanWiederhold/FCCAnalyses/commit/aefdcee5ea5e464118a98c05478c1d2ccded828d"
+        },
+        "date": 1661638212676,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "nightly | Time spent running the analysis: examples/FCCee/higgs/mH-recoil/mumu",
+            "value": 15.809457540512085,
+            "unit": "Seconds",
+            "range": 10,
+            "extra": "Analysis path: examples/FCCee/higgs/mH-recoil/mumu"
+          },
+          {
+            "name": "nightly | Time spent running the analysis: examples/FCCee/flavour/Bc2TauNu",
+            "value": 20.626627206802368,
+            "unit": "Seconds",
+            "range": 10,
+            "extra": "Analysis path: examples/FCCee/flavour/Bc2TauNu"
+          },
+          {
+            "name": "nightly | Time spent running the analysis: examples/FCCee/test",
+            "value": 15.399807691574097,
+            "unit": "Seconds",
+            "range": 10,
+            "extra": "Analysis path: examples/FCCee/test"
           }
         ]
       }
