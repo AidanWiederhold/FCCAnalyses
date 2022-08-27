@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1661637856006,
+  "lastUpdate": 1661637857307,
   "repoUrl": "https://github.com/AidanWiederhold/FCCAnalyses",
   "entries": {
     "Benchmark": [
@@ -417,6 +417,45 @@ window.BENCHMARK_DATA = {
             "unit": "Seconds",
             "range": 10,
             "extra": "Analysis path: examples/FCCee/test"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "34742917+kjvbrt@users.noreply.github.com",
+            "name": "Juraj Smiesko",
+            "username": "kjvbrt"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b8eed710760ceecd06eeffdf9fcf7052a5da0c34",
+          "message": "Merge pull request #203 from imelnyk1337/summer-programme\n\nAdded ability to change number of thread from command line",
+          "timestamp": "2022-08-26T17:51:14+02:00",
+          "tree_id": "dfb86f4703f2271533dcdc29661b5dad23b639f6",
+          "url": "https://github.com/AidanWiederhold/FCCAnalyses/commit/b8eed710760ceecd06eeffdf9fcf7052a5da0c34"
+        },
+        "date": 1661637856828,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "nightly | Events processed per second: examples/FCCee/higgs/mH-recoil/mumu",
+            "value": 8.48293038154685,
+            "unit": "Evt/s"
+          },
+          {
+            "name": "nightly | Events processed per second: examples/FCCee/flavour/Bc2TauNu",
+            "value": 6.139528426759454,
+            "unit": "Evt/s"
+          },
+          {
+            "name": "nightly | Events processed per second: examples/FCCee/test",
+            "value": 8.681461296580586,
+            "unit": "Evt/s"
           }
         ]
       }
