@@ -9,7 +9,7 @@ def run(input_file, output_file, decay):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--input', type=str, required=True, help='Select the input file(s).')
+    parser.add_argument('--input', nargs="+", required=True, help='Select the input file(s).')
     parser.add_argument('--output', type=str, required=True, help='Select the output file.')
     parser.add_argument('--decay', type=str, required=True, help='Select the decay.')
     args = parser.parse_args()
