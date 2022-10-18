@@ -123,6 +123,16 @@ def getElement(rdfModule, element, isFinal=False):
                 return {}
             else: print('The option <{}> is not available in presel analysis'.format(element))
 
+        elif element=='geometryFile':
+            print('The variable <{}> is optional in your analysys.py file, return default value empty string'.format(element))
+            if isFinal: print('The option <{}> is not available in final analysis'.format(element))
+            return ""
+
+        elif element=='readoutName':
+            print('The variable <{}> is optional in your analysys.py file, return default value empty string'.format(element))
+            if isFinal: print('The option <{}> is not available in final analysis'.format(element))
+            return ""
+
         return None
 
 #__________________________________________________________
@@ -310,11 +320,15 @@ def runPreprocess(df):
     d1.Print()
     sys.exit(3)
     return df
+
 #__________________________________________________________
 def runRDF(rdfModule, inputlist, outFile, nevt, args):
     # for convenience and compatibility with user code
     ROOT.gInterpreter.Declare("using namespace FCCAnalyses;")
-
+    geometryFile = getElement(rdfModule, "geometryFile")
+    readoutName  = getElement(rdfModule, "readoutName")
+    if geometryFile!="" and readoutName!="":
+        ROOT.CaloNtupleizer.loadGeometry(geometryFile, readoutName)
     ncpus = 1
     # cannot use MT with Range()
     if args.nevents < 0:
@@ -445,6 +459,16 @@ def sendToBatch(rdfModule, chunkList, process, analysisFile):
     print ('----> batch command  : ',cmdBatch)
     job=SubmitToCondor(cmdBatch,10)
 
+#__________________________________________________________
+def addeosType(fileName):
+    sfileName=fileName.split('/')
+    if sfileName[1]=='experiment':
+        fileName='root://eospublic.cern.ch/'+fileName
+    elif sfileName[1]=='user' or sfileName[1].contains('home-'):
+        fileName='root://eosuser.cern.ch/'+fileName
+    else:
+        print('unknown eos type, please check with developers as it might not run with best performances')
+    return fileName
 
 #__________________________________________________________
 def runLocal(rdfModule, fileList, args):
@@ -454,6 +478,10 @@ def runLocal(rdfModule, fileList, args):
     nevents_meta = 0
     nevents_local = 0
     for fileName in fileList:
+
+        if fileName.split('/')[0]=='eos':
+            fileName=addeosType(fileName)
+
         fileListRoot.push_back(fileName)
         print ("   ",fileName)
         tf=ROOT.TFile.Open(str(fileName),"READ")
@@ -531,6 +559,21 @@ def runLocal(rdfModule, fileList, args):
 
 #__________________________________________________________
 def runStages(args, rdfModule, preprocess, analysisFile):
+    # check if analyses plugins need to be loaded before anything
+    analysesList = getElement(rdfModule, "analysesList")
+    if analysesList and len(analysesList) > 0:
+        _ana = []
+        for analysis in analysesList:
+            print(f'----> Load cxx analyzers from {analysis}...')
+            if analysis.startswith('libFCCAnalysis_'):
+                ROOT.gSystem.Load(analysis)
+            else:
+                ROOT.gSystem.Load(f'libFCCAnalysis_{analysis}')
+            if not hasattr(ROOT, analysis):
+                print(f'----> ERROR: analysis "{analysis}" not properly loaded. Exit')
+                sys.exit(4)
+            _ana.append(getattr(ROOT, analysis).dictionary)
+
     #check if outputDir exist and if not create it
     outputDir = getElement(rdfModule,"outputDir")
     if not os.path.exists(outputDir) and outputDir!='':
@@ -869,10 +912,8 @@ def run(mainparser, subparser=None):
     """
 
     if subparser:
-        print("===================setup subparser")
         setup_run_parser(subparser)
     args, _ = mainparser.parse_known_args()
-    print("args in mains code==============================",args)
     #check that the analysis file exists
     analysisFile = args.pathToAnalysisScript
     if not os.path.isfile(analysisFile):
