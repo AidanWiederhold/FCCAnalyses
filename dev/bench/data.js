@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1666098196483,
+  "lastUpdate": 1666098198135,
   "repoUrl": "https://github.com/AidanWiederhold/FCCAnalyses",
   "entries": {
     "Benchmark": [
@@ -1108,6 +1108,50 @@ window.BENCHMARK_DATA = {
             "unit": "Seconds",
             "range": 10,
             "extra": "Analysis path: examples/FCCee/test"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "aidanwiederhold@gmail.com",
+            "name": "Aidan Wiederhold",
+            "username": "AidanWiederhold"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d287652042e2465b2835edb465b55fd6ef1ef078",
+          "message": "Merge branch 'HEP-FCC:master' into master",
+          "timestamp": "2022-10-18T14:54:04+02:00",
+          "tree_id": "dc938964b025cb9fe1456e18228fd8be8b854c1f",
+          "url": "https://github.com/AidanWiederhold/FCCAnalyses/commit/d287652042e2465b2835edb465b55fd6ef1ef078"
+        },
+        "date": 1666098197552,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "nightly | Events processed per second: case-studies/analysis_example/scripts",
+            "value": 9.384501006713482,
+            "unit": "Evt/s"
+          },
+          {
+            "name": "nightly | Events processed per second: examples/FCCee/higgs/mH-recoil/mumu",
+            "value": 8.245334268339679,
+            "unit": "Evt/s"
+          },
+          {
+            "name": "nightly | Events processed per second: examples/FCCee/flavour/Bc2TauNu",
+            "value": 6.8430766853273015,
+            "unit": "Evt/s"
+          },
+          {
+            "name": "nightly | Events processed per second: examples/FCCee/test",
+            "value": 8.90589119373757,
+            "unit": "Evt/s"
           }
         ]
       }
