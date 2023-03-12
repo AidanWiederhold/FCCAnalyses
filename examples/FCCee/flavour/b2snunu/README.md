@@ -40,6 +40,16 @@ cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=../install
 make install
 ```
+
+## To completely reset the environment (sometimes needed to match changes behind the scenes)
+- In the directory above FCCAnalyses and FCCeePhysicsPerformance
+```bash
+rm -r ./build;
+rm -r ./install;
+rm -r ./FCCeePhysicsPerformance/case-studies/flavour/tools/localPythonTools;
+```
+- Then restart your shell just to be sure local variables are dropped
+
 <br />
 
 # Running The Analysis
@@ -47,7 +57,7 @@ make install
 All of the code used in this analysis is designed to be used from the `FCCAnalyses/examples/FCCee/flavour/b2snunu/` directory assuming that the `FCCAnalyses` and `FCCeePhysicsPerformance` repositories have been cloned alongside each other.
 
 ## EOS Cache
-In order to speed up Snakemake solving the workflow we cache the files available in EOS in a JSON, using `scripts/eos_cacher.py` so that Snakemake doesn't need to verify their existence every time it runs. However the current environment doesn't include XRootD which is used to glob the EOS directory remotely. Instead of the analysis environment you should use any environment with XRootD available to create the bookkeeping json and then proceed to use the analysis environment described above for the rest of the analysis. Hopefully I can get XRootD working in the analysis environment so we can avoid switching environments just for this. A suitable environment for running `scripts/eos_cacher.py` can be created by doing `mamba env create -f environment.yaml` using the `yaml` in `FCCAnalyses/examples/FCCee/flavour/b2snunu/`.
+In order to speed up Snakemake solving the workflow we cache the files available in EOS in a JSON, using `scripts/eos_cacher.py` so that Snakemake doesn't need to verify their existence every time it runs. However the current environment doesn't include XRootD which is used to glob the EOS directory remotely. Instead of the analysis environment you should use any environment with XRootD available to create the bookkeeping json and then proceed to use the analysis environment described above for the rest of the analysis. Hopefully I can get XRootD working in the analysis environment so we can avoid switching environments just for this. A suitable environment for running `scripts/eos_cacher.py` can be created by doing `mamba env create -f eos_cache_env.yaml` using the `yaml` in `FCCAnalyses/examples/FCCee/flavour/b2snunu/`. The environment can then be activated by doing `conda activate FCC-b2snunu`.
 
 The final file of the workflow that depends on all possible steps is `./output/snakemake_flags/all` so request this from Snakemake if you want to run the entire analysis.
 
@@ -60,7 +70,7 @@ snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120
 ## To run the workflow on a Slurm cluster (deprecated method)
 ```bash
 cd FCCAnalyses/examples/FCCee/flavour/b2snunu/
-snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120 --cluster ./scripts/slurm_wrapper.py; mv ./slurm-* ./SlurmLogs
+snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120 --cluster ./scripts/slurm_wrapper.py --use-conda --max-status-checks-per-second 0.1; mv ./slurm-* ./SlurmLogs
 ```
 Other cluster types are possible but require a different wrapper which shouldn't be hard to make based off of our Slurm one.
 

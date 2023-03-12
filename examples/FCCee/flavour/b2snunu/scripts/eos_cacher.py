@@ -20,15 +20,19 @@ def cache(outf_name, sample_portion, group_size):
         for event_type, decay_models in event_types.items():
             eos_cache[decay][event_type] = {}
             for decay_model in decay_models:
+                if decay=="Bd2KsNuNu" and decay_model == "signal":
+                    _group_size = max(int(group_size/10.), 1)
+                else:
+                    _group_size = group_size
                 eos_cache[decay][event_type][decay_model] = {}
                 path = MC+f"{event_type}{decay_model_to_fname(decay_model, decay)}"
                 result = XRootD.glob_wildcards(path+"/events_{sample}.root")
                 result = result[0][0:int(len(result[0])*sample_portion)]
                 eos_cache[decay][event_type][decay_model]["samples"]=[]
-                for i in range(1, max(math.floor(len(result)/group_size),1)+1):
-                    eos_cache[decay][event_type][decay_model]["samples"].append(result[(i-1)*group_size:i*group_size])
-                if result[i*group_size:-1]!=[]:
-                    eos_cache[decay][event_type][decay_model]["samples"].append(result[i*group_size:-1])
+                for i in range(1, max(math.floor(len(result)/_group_size),1)+1):
+                    eos_cache[decay][event_type][decay_model]["samples"].append(result[(i-1)*_group_size:i*_group_size])
+                if result[i*_group_size:-1]!=[]:
+                    eos_cache[decay][event_type][decay_model]["samples"].append(result[i*_group_size:-1])
                 eos_cache[decay][event_type][decay_model]["expected_output"] = [f"{outputs}root/stage1/{decay}/{event_type}/{decay_model}/{i}.root" for i in range(len(eos_cache[decay][event_type][decay_model]["samples"]))]
                 eos_cache[decay][event_type][decay_model]["expected_output_ids"] = [i for i in range(len(eos_cache[decay][event_type][decay_model]["samples"]))]
                 
@@ -37,7 +41,7 @@ def cache(outf_name, sample_portion, group_size):
                 eos_cache[decay][event_type][decay_model]["training"] = random.sample(eos_cache[decay][event_type][decay_model]["samples"], int(total_samples*training_portion))
                 eos_cache[decay][event_type][decay_model]["training_output"] = []
                 eos_cache[decay][event_type][decay_model]["training_output_ids"] = []
-                print(f"For {decay} the {event_type} {decay_model} BDT 1 training will feature {group_size*int(total_samples*training_portion)} input files!")
+                print(f"For {decay} the {event_type} {decay_model} BDT 1 training will feature {_group_size*int(total_samples*training_portion)} input files!")
                 for sample_group in eos_cache[decay][event_type][decay_model]["training"]:
                     index = eos_cache[decay][event_type][decay_model]["samples"].index(sample_group)
                     output_name = eos_cache[decay][event_type][decay_model]["expected_output"][index].replace("stage1", "training")
@@ -61,5 +65,5 @@ if __name__ == "__main__":
     parser.add_argument('--sample_portion', default = 1., type=float, help='Choose the fraction of MC to use.')
     parser.add_argument('--group_size', default = 20, type=int, help='Choose how many MC samples to group together for processing to reduce the total number of files in the workflow.')
     args = parser.parse_args()
-    cache(f"eos_cache.json", args.sample_portion, args.group_size)
+    cache(f"eos_cache_new_var.json", args.sample_portion, args.group_size)
 

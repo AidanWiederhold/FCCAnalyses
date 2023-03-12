@@ -1,11 +1,12 @@
 analysis_scripts = "scripts/"
-outputs = "output/"
+outputs = "output_new_var/"
 plots = f"{outputs}plots/"
 snakemake_flags = f"{outputs}snakemake_flags/"
-logs = f"logs/"
-benchmarks = f"benchmarks/"
+logs = f"logs_new_var/"
+benchmarks = f"benchmarks_new_var/"
 input_mc = f"{outputs}/input_mc/"
 envs = "../envs/"
+eos_cache = "eos_cache_new_var.json"
 
 MC = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/"
 
@@ -14,62 +15,92 @@ event_types = {
     "p8_ee_Zcc_ecm91": ["inclusive"],
     "p8_ee_Zuds_ecm91": ["inclusive"],
 }
-decays = ["Bd2KstNuNu", "Bs2PhiNuNu"]#, "Bu2KNuNu"]
+decays = ["Bd2KstNuNu", "Bs2PhiNuNu", "Bd2KsNuNu", "Lb2LbNuNu"]#, "Bu2KNuNu"]
+#decays = ["Bd2KsNuNu", "Lb2LbNuNu"]
 samples = set()
 
 decay_to_candidates = {
     "Bd2KstNuNu": "KPi",
-    "Bs2PhiNuNu": "KK", # TODO check this https://pdglive.lbl.gov/Particle.action?init=0&node=M004&home=MXXX005
-    "Bu2KNuNu": "K",
+    "Bs2PhiNuNu": "KK",
+    #"Bu2KNuNu": "K",
+    "Bd2KsNuNu": "PiPi",
+    "Lb2LbNuNu": "pPi"
 }
 
 decay_to_pdgids = {
     "Bd2KstNuNu": ["313", "511"],
     "Bs2PhiNuNu": ["333", "531"],
-    "Bu2KNuNu": ["321", "521"],
+    #"Bu2KNuNu": ["321", "521"],
+    "Bd2KsNuNu": ["310", "511"],
+    "Lb2LbNuNu": ["3122", "5122"],
 }
 
 # rough estimate from running a few files
 stage1_efficiencies = {
     "Bd2KstNuNu": {
         "p8_ee_Zbb_ecm91": {
-            "signal": 168569./200000.,
-            "inclusive": 385753./2000000.,
+            "signal": 0.82,
+            "inclusive": 0.19,
         },
         "p8_ee_Zcc_ecm91": {
-            "inclusive": 308961./2000000.,
+            "inclusive": 0.15,
         },
         "p8_ee_Zuds_ecm91": {
-            "inclusive": 9067./2000000.,
+            "inclusive": 0.0047,
         },
     },
     "Bs2PhiNuNu": {
         "p8_ee_Zbb_ecm91": {
-            "signal": 171835./200000.,
-            "inclusive": 35289./2000000.,
+            "signal": 0.84,
+            "inclusive": 0.017,
         },
         "p8_ee_Zcc_ecm91": {
-            "inclusive": 25415./2000000.,
+            "inclusive": 0.013,
         },
         "p8_ee_Zuds_ecm91": {
-            "inclusive": 1046./2000000.,
+            "inclusive": 0.00051,
         },
     },
-    "Bu2KNuNu": {
+    "Bd2KsNuNu": {
         "p8_ee_Zbb_ecm91": {
-            "signal": 171835./200000.,
-            "inclusive": 35289./2000000.,
+            "signal": 164828./200000.,
+            "inclusive": 755455./2000000.,
         },
         "p8_ee_Zcc_ecm91": {
-            "inclusive": 25415./2000000.,
+            "inclusive": 665845./2000000.,
         },
         "p8_ee_Zuds_ecm91": {
-            "inclusive": 1046./2000000.,
+            "inclusive": 367748./2000000.,
         },
     },
+    "Lb2LbNuNu": {
+        "p8_ee_Zbb_ecm91": {
+            "signal": 150101./200000.,
+            "inclusive": 86385./2000000.,
+        },
+        "p8_ee_Zcc_ecm91": {
+            "inclusive": 89519./2000000.,
+        },
+        "p8_ee_Zuds_ecm91": {
+            "inclusive": 107630./2000000.,
+        },
+    },
+   # "Bu2KNuNu": {
+   #     "p8_ee_Zbb_ecm91": {
+   #         "signal": 171835./200000.,
+   #         "inclusive": 35289./2000000.,
+   #     },
+   #     "p8_ee_Zcc_ecm91": {
+   #         "inclusive": 25415./2000000.,
+   #     },
+   #     "p8_ee_Zuds_ecm91": {
+   #         "inclusive": 1046./2000000.,
+   #     },
+   # },
 }
 
 branching_fractions = {
+    "signal": 0.1512,
     "p8_ee_Zbb_ecm91": 0.1512,
     "p8_ee_Zcc_ecm91": 0.1203,
     "p8_ee_Zuds_ecm91": 0.6991-0.1512-0.1203,
@@ -79,10 +110,10 @@ training_proportions = {
     "Bd2KstNuNu": {
         "p8_ee_Zbb_ecm91": {
             "signal": 140/1000,
-            "inclusive": 60/10000,
+            "inclusive": 40/10000,
         },
         "p8_ee_Zcc_ecm91": {
-            "inclusive": 60/10000,
+            "inclusive": 40/10000,
         },
         "p8_ee_Zuds_ecm91": {
             "inclusive": 100/10000,
@@ -91,70 +122,84 @@ training_proportions = {
     "Bs2PhiNuNu": {
         "p8_ee_Zbb_ecm91": {
             "signal": 120/1000,
-            "inclusive": 400/10000,
+            "inclusive": 360/10000,
         },
         "p8_ee_Zcc_ecm91": {
-            "inclusive": 300/10000,
+            "inclusive": 280/10000,
         },
         "p8_ee_Zuds_ecm91": {
             "inclusive": 1000/10000,
         },
     },
-    "Bu2KNuNu": {
+    "Bd2KsNuNu": {
         "p8_ee_Zbb_ecm91": {
-            "signal": 120/1000,
-            "inclusive": 400/10000,
+            "signal": 14/100,
+            "inclusive": 20/10000,
         },
         "p8_ee_Zcc_ecm91": {
-            "inclusive": 300/10000,
+            "inclusive": 20/10000,
         },
         "p8_ee_Zuds_ecm91": {
-            "inclusive": 1000/10000,
+            "inclusive": 40/10000,
         },
     },
+    "Lb2LbNuNu": {
+        "p8_ee_Zbb_ecm91": {
+            "signal": 140/1000,
+            "inclusive": 60/10000,
+        },
+        "p8_ee_Zcc_ecm91": {
+            "inclusive": 40/10000,
+        },
+        "p8_ee_Zuds_ecm91": {
+            "inclusive": 140/10000,
+        },
+    }
+    #"Bu2KNuNu": {
+    #    "p8_ee_Zbb_ecm91": {
+    #        "signal": 120/1000,
+    #        "inclusive": 400/10000,
+    #    },
+    #    "p8_ee_Zcc_ecm91": {
+    #        "inclusive": 300/10000,
+    #    },
+    #    "p8_ee_Zuds_ecm91": {
+    #        "inclusive": 1000/10000,
+    #    },
+    #},
 }
 
-events_per_file = {
-    "Bd2KstNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "signal": 10000,
-            "inclusive": 100000,
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": 100000,
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": 100000,
-        },
-    },
-    "Bs2PhiNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "signal": 10000,
-            "inclusive": 100000,
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": 100000,
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": 100000,
-        },
-    },
-    "Bu2KNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "signal": 10000,
-            "inclusive": 100000,
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": 100000,
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": 100000,
-        },
-    },
-}
+events_per_file = {}
+for decay in decays:
+    events_per_file[decay] = {
+                            "p8_ee_Zbb_ecm91": {
+                                "signal": 10000,
+                                "inclusive": 100000,
+                            },
+                            "p8_ee_Zcc_ecm91": {
+                                "inclusive": 100000,
+                            },
+                            "p8_ee_Zuds_ecm91": {
+                                "inclusive": 100000,
+                            }
+    }
 
-tuple_id_blacklist = { # TODO should probably report broken MC
-    "Bd2KstNuNu": {
+events_per_file["Lb2LbNuNu"] = {
+                            "p8_ee_Zbb_ecm91": {
+                                "signal": 100000,
+                                "inclusive": 100000,
+                            },
+                            "p8_ee_Zcc_ecm91": {
+                                "inclusive": 100000,
+                            },
+                            "p8_ee_Zuds_ecm91": {
+                                "inclusive": 100000,
+                            }
+    }
+
+tuple_id_blacklist = {} # TODO should probably report broken MC
+for decay in decays:
+    tuple_id_blacklist[decay] = {
         "p8_ee_Zbb_ecm91": {
             "inclusive": ["255", "230"],
             "signal": [],
@@ -165,48 +210,33 @@ tuple_id_blacklist = { # TODO should probably report broken MC
         "p8_ee_Zuds_ecm91": {
             "inclusive": [],
         },
-    },
-    "Bs2PhiNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "inclusive": ["255", "230"],
-            "signal": [],
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": [],
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": [],
-        },
-    },
-    "Bu2KNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "inclusive": ["255", "230"],
-            "signal": [],
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": [],
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": [],
-        },
-    },
-}
+    }
 
 MVA_cuts = [0.6, 0.7, 0.8, 0.9, 0.99]
 
-KPi_cut = "((KPiCandidates_mass[0]>0.65 && KPiCandidates_mass[0]<1.1)"
-KK_cut = "((KKCandidates_mass[0]>1. && KKCandidates_mass[0]<1.06)"
+mass_cut = {"KPi": [0.65, 1.1],
+            "KK": [1., 1.06],
+            "PiPi": [0.45, 0.55],
+            "pPi": [1.1, 1.13],}
+
+KPi_cut = f"((KPiCandidates_mass[0]>{mass_cut['KPi'][0]} && KPiCandidates_mass[0]<{mass_cut['KPi'][1]})"
+KK_cut = f"((KKCandidates_mass[0]>{mass_cut['KK'][0]} && KKCandidates_mass[0]<{mass_cut['KK'][1]})"
+PiPi_cut = f"((PiPiCandidates_mass[0]>{mass_cut['PiPi'][0]} && PiPiCandidates_mass[0]<{mass_cut['PiPi'][1]})"
+pPi_cut = f"((pPiCandidates_mass[0]>{mass_cut['pPi'][0]} && pPiCandidates_mass[0]<{mass_cut['pPi'][1]})"
 for i in range(1,10):
-    KPi_cut = f"{KPi_cut} || (KPiCandidates_mass[{i}]>0.65 && KPiCandidates_mass[{i}]<1.1)"
-    KK_cut = f"{KK_cut} || (KKCandidates_mass[{i}]>1. && KKCandidates_mass[{i}]<1.06)"
+    KPi_cut = f"{KPi_cut} || (KPiCandidates_mass[{i}]>{mass_cut['KPi'][0]} && KPiCandidates_mass[{i}]<{mass_cut['KPi'][1]})"
+    KK_cut = f"{KK_cut} || (KKCandidates_mass[{i}]>{mass_cut['KK'][0]} && KKCandidates_mass[{i}]<{mass_cut['KK'][1]})"
+    PiPi_cut = f"{PiPi_cut} || (PiPiCandidates_mass[{i}]>{mass_cut['PiPi'][0]} && PiPiCandidates_mass[{i}]<{mass_cut['PiPi'][1]})"
+    pPi_cut = f"{pPi_cut} || (pPiCandidates_mass[{i}]>{mass_cut['pPi'][0]} && pPiCandidates_mass[{i}]<{mass_cut['pPi'][1]})"
 KPi_cut = f"{KPi_cut})"
 KK_cut = f"{KK_cut})"
+PiPi_cut = f"{PiPi_cut})"
+pPi_cut = f"{pPi_cut})"
 mass_cuts = {"Bd2KstNuNu": KPi_cut,
              "Bs2PhiNuNu": KK_cut,
+             "Bd2KsNuNu": PiPi_cut,
+             "Lb2LbNuNu": pPi_cut
             }
-
-mass_cut = {"KPi": [0.65, 1.1],
-            "KK": [1., 1.06],}
 
 truth_ids = {"Bd2KstNuNu": {"parent": 511,
                             "candidate": 313,
@@ -216,6 +246,16 @@ truth_ids = {"Bd2KstNuNu": {"parent": 511,
              "Bs2PhiNuNu": {"parent": 531,
                             "candidate": 333,
                             "children": [-321, 321],
+                            "siblings": [[-12, 12], [-14, 14], [-16, 16]],
+                            },
+             "Bd2KsNuNu": {"parent": 511,
+                            "candidate": 310,
+                            "children": [-211, 211],
+                            "siblings": [[-12, 12], [-14, 14], [-16, 16]],
+                            },
+             "Lb2LbNuNu": {"parent": 5122,
+                            "candidate": 3122,
+                            "children": [2212, -211],
                             "siblings": [[-12, 12], [-14, 14], [-16, 16]],
                             },
             }

@@ -69,5 +69,5 @@ with NamedTemporaryFile(mode="w", prefix=prefix) as sub_file:
 
     # Now submit this slurm script, and delete the temporary file
     sub_file.flush()
-    subprocess.call( ["sbatch", sub_file.name, ">", logfile] )
+    subprocess.call( ["sbatch", "-A", "taskfarm", sub_file.name, ">", logfile] )
 

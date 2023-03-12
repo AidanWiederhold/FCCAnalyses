@@ -1,5 +1,6 @@
 import uproot
 import pandas
+import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -32,13 +33,25 @@ hist_setting = {
 }
 
 plt.tight_layout()
+mva_values = np.linspace(0., 1., 250)
 #for _name, df in {"signal": dfs["bbbar_df"]}.items():
 for name, df in dfs.items():
-    plt.hist(df, bins=500, range=[0., 1.], density=True, alpha = 0.5, color = hist_setting[name]["colour"], edgecolor=hist_setting[name]["colour"], histtype=hist_setting[name]["hist_type"], label=name)
+    eff_values = []
+    initial_events = len(df)
+    print(len(df))
+    print(df)
+    for mva_value in mva_values:
+        df = df[df[0]>mva_value]
+        eff = len(df)/initial_events
+        eff_values.append(eff)
+    plt.plot(mva_values, eff_values, color = hist_setting[name]["colour"], label=name)
 plt.yscale('log')
-plt.legend(loc="upper center")
+plt.legend(loc="lower left")
 plt.xlabel("BDT Response")
-plt.ylabel("Normalised Counts")
+plt.ylabel("Efficiency")
+plt.xlim(0., 1.)
+plt.xticks([i/10. for i in range(0, 11)])
+plt.grid(which="both")
 plt.savefig(args.output, dpi=2000)
 plt.savefig(args.output.replace("png", "pdf"))
 

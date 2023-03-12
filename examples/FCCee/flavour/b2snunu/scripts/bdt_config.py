@@ -1,4 +1,5 @@
 import os
+import config as cfg
 #repo = os.getenv('PWD')
 repo = "/eos/experiment/fcc/ee/analyses/case-studies/flavour/Bd2KstNuNu/analysis"
 #repo can be changed, but by default writes locally
@@ -32,7 +33,7 @@ loc.train_2 = f"{loc.prod}/Training_4stage2/"
 loc.analysis = f"{loc.prod}/Analysis_stage2/"
 
 #First stage BDT including event-level vars
-train_vars = ["EVT_ThrustEmin_E",
+train_vars = {decay: ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_E",
               "EVT_ThrustEmin_Echarged",
               "EVT_ThrustEmax_Echarged",
@@ -42,21 +43,24 @@ train_vars = ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_Ncharged",
               "EVT_ThrustEmin_Nneutral",
               "EVT_ThrustEmax_Nneutral"
-              ]
+              ] for decay in cfg.decays}
 
 #First stage BDT including event-level vars and vertex vars
 #This is the default list used in the analysis
-train_vars_vtx = [*train_vars, *[
+train_vars_vtx = {decay: [*train_vars[decay], *[
                   "EVT_NtracksPV",
                   "EVT_NVertex",
-                  "EVT_NKPi",
+                  f"EVT_N{cfg.decay_to_candidates[decay]}",
                   "EVT_ThrustEmin_NDV",
                   "EVT_ThrustEmax_NDV",
                   "EVT_dPV2DVmin",
                   "EVT_dPV2DVmax",
                   "EVT_dPV2DVave"
-                  ]]
+                  ]] for decay in cfg.decays}
 
+for key, values in train_vars_vtx.items():
+    print(key, values)
+print(train_vars_vtx.keys())
 
 #Decay modes used in first stage training and their respective file names
 mode_names = {"Bd2KstNuNu": "p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu",

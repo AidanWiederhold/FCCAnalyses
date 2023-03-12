@@ -27,16 +27,17 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
 
     #Bd -> Kst nu nu signal
     if(vars=="normal"):
-        vars_list = train_vars
+        vars_list = train_vars[decay]
     elif(vars=="vtx"):
-        vars_list = train_vars_vtx
+        vars_list = train_vars_vtx[decay]
     print("TRAINING VARS")
     print(vars_list)
 
     total_bkg = 1e6
 
     # count generated events
-    bkgs = cfg.branching_fractions.keys()
+    bkgs = [bkg for bkg in cfg.branching_fractions.keys() if bkg!="signal"]
+    print(f"{bkgs = }")
     stage1_efficiencies = {}
     generated_events = {}
     for bkg, bkg_files in zip(bkgs, [bbbar_root, ccbar_root, qqbar_root]):
@@ -74,7 +75,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     
     df_sig = df_sig.sample(int(1e6), random_state=10)
     print(f"Number of signal events: {len(df_sig)}")
-
+    print(f"{generated_events = }")
     for bkg in bkgs:
         print(f"Generated {bkg} events: {generated_events[bkg]}")
         print(f"Stage1 efficiency of {bkg}: {stage1_efficiencies[bkg]}")
@@ -153,7 +154,10 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     plt.grid()
     plt.tight_layout()
     print('Plotted ROC curve to', roc_plot)
+    directory = "/".join(roc_plot.split("/")[:-1])
+    os.system(f"mkdir -p {directory}")
     fig.savefig(roc_plot)
+    fig.savefig(roc_plot.replace("pdf", "png"))
 
     print("Writing xgboost model to ROOT file")
     ROOT.TMVA.Experimental.SaveXGBoost(bdt, f"{decay}_BDT", output_root, num_inputs=len(vars_list))

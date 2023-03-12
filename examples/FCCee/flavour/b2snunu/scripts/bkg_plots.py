@@ -7,9 +7,9 @@ import math
 def round_sf(x, sf=3):
     return round(x, sf-int(math.floor(math.log10(abs(x))))-1)
 
-def main(input_files, output_file, spruced, mva_cut, hist_plot, eos_cache, decay, event_type, decay_model):
+def main(input_files, output_file, spruced, mva_cut, hist_plot, eos_cache_name, decay, event_type, decay_model):
 
-    with open("eos_cache.json") as inf:
+    with open(eos_cache_name) as inf:
         eos_cache = json.load(inf)
     samples = eos_cache[decay][event_type][decay_model]["samples"]
     total_samples = sum([len(sample) for sample in samples])
@@ -58,20 +58,29 @@ def main(input_files, output_file, spruced, mva_cut, hist_plot, eos_cache, decay
     decay_descriptors.reverse()
     counts.reverse()
 
-    fig, ax = plt.subplots()
-    ax.barh(y_pos, counts, align="center")
+    fig, ax = plt.subplots(figsize=(30,16))
+    ax.barh(y_pos, counts, align="center", height=0.6)
     ax.set_yticks(y_pos, [f"{round_sf(count*100/total_events)}" for count in counts])
-    for bar, decay in zip(ax.patches, decay_descriptors):
-        ax.text(0.5, bar.get_y()+bar.get_height()/2, decay.replace("gamma", "g"), color = 'black', ha = 'left', va = 'center')
+    ax2 = ax.twinx()
+    ax2.set_yticks(y_pos, [decay.replace("gamma", "g") for decay in decay_descriptors])
+    ax.set_ylim(min(y_pos)-0.5, max(y_pos)+0.5)
+    ax2.set_ylim(min(y_pos)-0.5, max(y_pos)+0.5)
+    ax.set_xticks([10**i for i in range(1, int(math.log10(max(counts))+1))])
+    ax.set_xscale("log")
+    #ax.set_xlim(0.1, max(counts)+0.05*max(counts))
+    #ax2.set_ylim(-0.05, len(pulls) / 10.0 - 0.05)
+    #for bar, decay in zip(ax.patches, decay_descriptors):
+    #    ax.text(0.5, bar.get_y()+bar.get_height()/2, decay.replace("gamma", "g"), color = 'black', ha = 'left', va = 'center')
     fig.tight_layout()
     #fig.set_size_inches(16,9)
     fig.savefig(args.output, dpi=400)
+    fig.savefig(args.output.replace("png", "pdf"))
 
     fig.clf()
     plt.clf()
     plot_values = [values["candidate_mass"] for values in list(spruced_counts.values())[:10]]
     total_entries = sum(len(values) for values in plot_values)
-    bins = total_entries/100
+    bins = total_entries/20
 
     fig = plt.figure(figsize=[10,10])
     ax = plt.subplot(111)
