@@ -94,6 +94,12 @@ namespace myUtils{
   ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
 							     ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop);
 
+  ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KsNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+							     ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop);
+
+  ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Lb2LbNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+							     ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop);
+
   ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bs2PhiNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
 							     ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop);
 
