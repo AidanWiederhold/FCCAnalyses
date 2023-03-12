@@ -4,32 +4,6 @@ from config import branching_fractions, stage1_efficiencies
 # events per file * files
 events_per_signal = 1e4*1e3 # 1e7
 events_per_bkg = 1e5*1e4 # 1e9
-stage1_efficiencies = {
-    "Bd2KstNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "signal": 168569./200000.,
-            "inclusive": 385753./2000000.,
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": 308961./2000000.,
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": 9067./2000000.,
-        },
-    },
-    "Bs2PhiNuNu": {
-        "p8_ee_Zbb_ecm91": {
-            "signal": 171835./200000.,
-            "inclusive": 35289./2000000.,
-        },
-        "p8_ee_Zcc_ecm91": {
-            "inclusive": 25415./2000000.,
-        },
-        "p8_ee_Zuds_ecm91": {
-            "inclusive": 1046./2000000.,
-        },
-    },
-}
 
 target_events = int(1e6)
 
