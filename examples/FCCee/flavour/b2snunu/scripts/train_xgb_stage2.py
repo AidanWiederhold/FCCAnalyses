@@ -42,8 +42,11 @@ def run(args):
     # read efficiencies
     print('READING EFFICIENCIES')
     stage2_efficiencies = {}
-    bkgs = list(cfg.branching_fractions.keys())
+    bkgs = list(cfg.event_types.keys())
+    print(args.qqbar_eff)
+    print(bkgs)
     for mode, eff in zip( ['signal']+bkgs, [args.signal_eff, args.bbbar_eff, args.ccbar_eff, args.qqbar_eff] ):
+        print(mode, eff, read_eff(eff))
         stage2_efficiencies[mode] = read_eff(eff)
 
     #print("Expected efficiencies")
@@ -57,7 +60,9 @@ def run(args):
     print(f"Number of signal events: {len(df_sig)}")
 
     df_bkg = {}
+    print(stage2_efficiencies)
     for bkg in bkgs:
+        print(bkg)
         print(f"Stage2 efficiency of {bkg}: {stage2_efficiencies[bkg]}")
 
     total_bkg = 1e6
@@ -137,9 +142,11 @@ def run(args):
     plt.grid()
     plt.tight_layout()
     print('Plotted ROC curve to', args.roc_plot)
+    os.makedirs(os.path.dirname(args.roc_plot), exist_ok=True)
     fig.savefig(args.roc_plot)
 
     print("Writing xgboost model to ROOT file")
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
     ROOT.TMVA.Experimental.SaveXGBoost(bdt, f"{args.decay}_BDT", args.output, num_inputs=len(vars_list))
 
     #Write model to joblib file

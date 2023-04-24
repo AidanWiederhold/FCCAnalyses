@@ -1,7 +1,7 @@
 source /cvmfs/fcc.cern.ch/sw/latest/setup.sh
 cd FCCeePhysicsPerformance/case-studies/flavour/tools
 source install.sh $PWD/localPythonTools
-#source localSetup.sh $PWD/localPythonTools
+source localSetup.sh $PWD/localPythonTools
 cd ../../../../FCCAnalyses/
 source ./setup.sh
 mkdir build install

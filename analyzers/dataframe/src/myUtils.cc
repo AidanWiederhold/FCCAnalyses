@@ -1796,39 +1796,55 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstNuNu(ROOT::VecOps::RVec<Ve
   return result;
 }
 
-ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KsNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
 								    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop){
 
   ROOT::VecOps::RVec<FCCAnalysesComposite2> result;
-  //loop over the reconstructed vertex collection
-  for (size_t i=0;i<vertex.size();i++){
+  int counter=0;
+  for (auto &p:vertex){
+    //not consider PV
+    if (p.vertex.primary==1){counter+=1;continue;}
+    //exactly 2 tracks
+    if (p.ntracks!=2){counter+=1;continue;}
 
-    //not consider PV, exactly 2 tracks
-    if (vertex.at(i).vertex.primary==1)continue;
-    if (vertex.at(i).ntracks!=2)       continue;
-
-    //2 tracks id as pions
-    int charge_phi=0;
-    int nobj_phi=0;
-    for (auto &r:vertex.at(i).reco_ind){
-      if (recop.at(r).type==211 ){
-        nobj_phi+=1;
-        charge_phi+=recop.at(r).charge;
+    //1 tracks id as kaon
+    int charge_k=0;
+    int nobj_k=0;
+    for (auto &r:p.reco_ind){
+      if (recop.at(r).type==321 ){
+	nobj_k+=1;
+	charge_k+=recop.at(r).charge;
       }
     }
-    //select candidates with exactly 2 kaons and charge 0
-    if (nobj_phi!=2)   continue;
-    if (charge_phi!=0) continue;
 
-    //build a composite vertex
+   //1 tracks id as pion
+    int charge_pi=0;
+    int nobj_pi=0;
+    for (auto &r:p.reco_ind){
+      if (recop.at(r).type==211){
+	nobj_pi+=1;
+	charge_pi+=recop.at(r).charge;
+      }
+    }
+    if (nobj_pi!=1){counter+=1; continue;}
+    if (nobj_k!=1){counter+=1; continue;}
+    if (charge_pi+charge_k!=0){counter+=1; continue;}
+
     FCCAnalysesComposite2 comp;
-    comp.vertex = i;
-    comp.particle = build_tlv(recop,vertex.at(i).reco_ind);
-    comp.charge = charge_phi;
+    comp.vertex = counter;
+    comp.particle = build_tlv(recop,p.reco_ind);
+    comp.charge = charge_pi+charge_k;
 
-    //add the composite vertex to the collection
     result.push_back(comp);
+    counter+=1;
   }
+  return result;
+}
+
+ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstMuMu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+								    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop){
+
+  ROOT::VecOps::RVec<FCCAnalysesComposite2> result = build_Bd2KstNuNu(vertex, recop);
   return result;
 }
 
@@ -1925,7 +1941,6 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bu2KNuNu(ROOT::VecOps::RVec<Vert
     // 1 track from the PV
     if (vertex.at(i).vertex.primary==0)continue;
     if (vertex.at(i).ntracks!=1)       continue;
-    std::cout << "potential candidate" << std::endl;
     //1 track id as kaon
     int charge_K=0;
     int nobj_K=0;
@@ -1948,7 +1963,6 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bu2KNuNu(ROOT::VecOps::RVec<Vert
 
     //add the composite vertex to the collection
     result.push_back(comp);
-    std::cout << "yeeter skeeter" << std::endl;
   }
   return result;
 }
