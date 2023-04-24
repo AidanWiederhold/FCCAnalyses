@@ -7,6 +7,7 @@ import ROOT
 import copy
 import re
 
+ROOT.gROOT.SetBatch(True)
 #__________________________________________________________
 def removekey(d, key):
     r = dict(d)
@@ -17,8 +18,18 @@ def sortedDictValues(dic):
     keys = sorted(dic)
     return [dic[key] for key in keys]
 
+def formatStatUncHist(hists, name, hstyle=3254):
+    hTot = hists[0].Clone(name + "_unc")
+    for h in hists[1:]:
+        hTot.Add(h)
+    hTot.SetFillColor(ROOT.kBlack)
+    hTot.SetMarkerSize(0)
+    hTot.SetLineWidth(0)
+    hTot.SetFillStyle(hstyle)    
+    return hTot
+
 #__________________________________________________________
-def mapHistos(var, label, sel, param):
+def mapHistos(var, label, sel, param, rebin):
     print ('run plots for var:{}     label:{}     selection:{}'.format(var,label,sel))
     signal=param.plots[label]['signal']
     backgrounds=param.plots[label]['backgrounds']
@@ -42,6 +53,7 @@ def mapHistos(var, label, sel, param):
                     param.scaleSig=scaleSig
                 print ('scaleSig ',scaleSig)
                 hh.Scale(param.intLumi*scaleSig)
+                hh.Rebin(rebin)
 
                 if len(hsignal[s])==0:
                     hsignal[s].append(hh)
@@ -62,6 +74,66 @@ def mapHistos(var, label, sel, param):
                 h=tf.Get(var)
                 hh = copy.deepcopy(h)
                 hh.Scale(param.intLumi)
+                hh.Rebin(rebin)
+                if len(hbackgrounds[b])==0:
+                    hbackgrounds[b].append(hh)
+                else:
+                    hh.Add(hbackgrounds[b][0])
+                    hbackgrounds[b][0]=hh
+
+    for s in hsignal:
+        if len(hsignal[s])==0:
+            hsignal=removekey(hsignal,s)
+
+    for b in hbackgrounds:
+        if len(hbackgrounds[b])==0:
+            hbackgrounds=removekey(hbackgrounds,b)
+
+    return hsignal,hbackgrounds
+
+
+#__________________________________________________________
+def mapHistosFromHistmaker(hName, param, plotCfg):
+    rebin = plotCfg['rebin'] if 'rebin' in plotCfg else 1
+    print (f'get histograms for {hName}')
+    signal=param.procs['signal']
+    backgrounds=param.procs['backgrounds']
+    scaleSig = plotCfg['scaleSig'] if 'scaleSig' in plotCfg else 1
+
+    hsignal = {}
+    for s in signal:
+        hsignal[s]=[]
+        for f in signal[s]:
+            fin=f"{param.inputDir}/{f}.root"
+            if not os.path.isfile(fin):
+                print ('file {} does not exist, skip'.format(fin))
+            else:
+                tf=ROOT.TFile(fin)
+                h=tf.Get(hName)
+                hh = copy.deepcopy(h)
+                print ('scaleSig ',scaleSig)
+                hh.Scale(param.intLumi*scaleSig)
+                hh.Rebin(rebin)
+                if len(hsignal[s])==0:
+                    hsignal[s].append(hh)
+                else:
+                    hh.Add(hsignal[s][0])
+                    hsignal[s][0]=hh
+
+
+    hbackgrounds = {}
+    for b in backgrounds:
+        hbackgrounds[b]=[]
+        for f in backgrounds[b]:
+            fin=f"{param.inputDir}/{f}.root"
+            if not os.path.isfile(fin):
+                print ('file {} does not exist, skip'.format(fin))
+            else:
+                tf=ROOT.TFile(fin)
+                h=tf.Get(hName)
+                hh = copy.deepcopy(h)
+                hh.Scale(param.intLumi)
+                hh.Rebin(rebin)
                 if len(hbackgrounds[b])==0:
                     hbackgrounds[b].append(hh)
                 else:
@@ -79,7 +151,7 @@ def mapHistos(var, label, sel, param):
     return hsignal,hbackgrounds
 
 #__________________________________________________________
-def runPlots(var,sel,param,hsignal,hbackgrounds,extralab,splitLeg):
+def runPlots(var,sel,param,hsignal,hbackgrounds,extralab,splitLeg,plotStatUnc):
 
     ###Below are settings for separate signal and background legends
     if(splitLeg):
@@ -141,14 +213,18 @@ def runPlots(var,sel,param,hsignal,hbackgrounds,extralab,splitLeg):
         colors.append(param.colors[b])
 
     intLumiab = param.intLumi/1e+06
-
+    intLumi = "L = {:.0f} ab^{{-1}}".format(param.energy,intLumiab)
+    if hasattr(param, "intLumiLabel"):
+        intLumi = getattr(param, "intLumiLabel")
 
     lt = "FCCAnalyses: FCC-hh Simulation (Delphes)"
-    rt = "#sqrt{{s}} = {:.1f} TeV,   L = {:.0f} ab^{{-1}}".format(param.energy,intLumiab)
+    rt = "#sqrt{{s}} = {:.1f} TeV,   L = {}".format(param.energy,intLumi)
 
     if 'ee' in param.collider:
         lt = "FCCAnalyses: FCC-ee Simulation (Delphes)"
-        rt = "#sqrt{{s}} = {:.1f} GeV,   L = {:.0f} ab^{{-1}}".format(param.energy,intLumiab)
+        rt = "#sqrt{{s}} = {:.1f} GeV,   {}".format(param.energy,intLumi)
+
+    
 
     customLabel=""
     try:
@@ -164,30 +240,151 @@ def runPlots(var,sel,param,hsignal,hbackgrounds,extralab,splitLeg):
         param.scaleSig=scaleSig
 
     if 'AAAyields' in var:
-        drawStack(var, 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, False , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields)
+        drawStack(var, 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, False , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc)
         return
 
     if 'stack' in param.stacksig:
         if 'lin' in param.yaxis:
-            drawStack(var+"_stack_lin", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, False , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields)
+            drawStack(var+"_stack_lin", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, False , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc)
         if 'log' in param.yaxis:
-            drawStack(var+"_stack_log", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, True , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields)
+            drawStack(var+"_stack_log", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, True , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc)
         if 'lin' not in param.yaxis and 'log' not in param.yaxis:
             print ('unrecognised option in formats, should be [\'lin\',\'log\']'.format(param.formats))
 
     if 'nostack' in param.stacksig:
         if 'lin' in param.yaxis:
-            drawStack(var+"_nostack_lin", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, False , False , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields)
+            drawStack(var+"_nostack_lin", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, False , False , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc)
         if 'log' in param.yaxis:
-            drawStack(var+"_nostack_log", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, True , False , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields)
+            drawStack(var+"_nostack_log", 'events', leg, lt, rt, param.formats, param.outdir+"/"+sel, True , False , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc)
         if 'lin' not in param.yaxis and 'log' not in param.yaxis:
             print ('unrecognised option in formats, should be [\'lin\',\'log\']'.format(param.formats))
     if 'stack' not in param.stacksig and 'nostack' not in param.stacksig:
         print ('unrecognised option in stacksig, should be [\'stack\',\'nostack\']'.format(param.formats))
 
+#__________________________________________________________
+def runPlotsHistmaker(hName, param, plotCfg):
+
+    output = plotCfg['output']
+    hsignal,hbackgrounds=mapHistosFromHistmaker(hName, param, plotCfg)
+
+    if hasattr(param, "splitLeg"):
+        splitLeg = param.splitLeg
+    else:
+        splitLeg = False
+
+    if hasattr(param, "plotStatUnc"):
+        plotStatUnc = param.plotStatUnc
+    else:
+        plotStatUnc = False
+
+    ###Below are settings for separate signal and background legends
+    if(splitLeg):
+        legsize = 0.04*(len(hsignal))
+        legsize2 = 0.04*(len(hbackgrounds))
+        legCoord = [0.15,0.60 - legsize,0.50,0.62]
+        leg2 = ROOT.TLegend(0.60,0.60 - legsize2,0.88,0.62)
+        leg2.SetFillColor(0)
+        leg2.SetFillStyle(0)
+        leg2.SetLineColor(0)
+        leg2.SetShadowColor(10)
+        leg2.SetTextSize(0.035)
+        leg2.SetTextFont(42)
+    else:
+        legsize = 0.04*(len(hbackgrounds)+len(hsignal))
+        legCoord=[0.68, 0.86-legsize, 0.96, 0.88]
+        try:
+            legCoord=param.legendCoord
+        except AttributeError:
+            print ('no legCoord, using default one...')
+            legCoord=[0.68, 0.86-legsize, 0.96, 0.88]
+        leg2 = None
+
+    leg = ROOT.TLegend(legCoord[0],legCoord[1],legCoord[2],legCoord[3])
+    leg.SetFillColor(0)
+    leg.SetFillStyle(0)
+    leg.SetLineColor(0)
+    leg.SetShadowColor(10)
+    leg.SetTextSize(0.035)
+    leg.SetTextFont(42)
+
+    for b in hbackgrounds:
+        if(splitLeg):
+            leg2.AddEntry(hbackgrounds[b][0],param.legend[b],"f")
+        else:
+            leg.AddEntry(hbackgrounds[b][0],param.legend[b],"f")
+    for s in hsignal:
+        leg.AddEntry(hsignal[s][0],param.legend[s],"l")
+
+
+    yields={}
+    for s in hsignal:
+        yields[s]=[param.legend[s],hsignal[s][0].Integral(0,-1), hsignal[s][0].GetEntries()]
+    for b in hbackgrounds:
+        yields[b]=[param.legend[b],hbackgrounds[b][0].Integral(0,-1), hbackgrounds[b][0].GetEntries()]
+
+    histos=[]
+    colors=[]
+
+    nsig=len(hsignal)
+    nbkg=len(hbackgrounds)
+
+    for s in hsignal:
+        histos.append(hsignal[s][0])
+        colors.append(param.colors[s])
+
+    for b in hbackgrounds:
+        histos.append(hbackgrounds[b][0])
+        colors.append(param.colors[b])
+
+    xtitle = plotCfg['xtitle'] if 'xtitle' in plotCfg else ""
+    ytitle = plotCfg['ytitle'] if 'ytitle' in plotCfg else "Events"
+    xmin = plotCfg['xmin'] if 'xmin' in plotCfg else -1
+    xmax = plotCfg['xmax'] if 'xmax' in plotCfg else -1
+    ymin = plotCfg['ymin'] if 'ymin' in plotCfg else -1
+    ymax = plotCfg['ymax'] if 'ymax' in plotCfg else -1
+    stack = plotCfg['stack'] if 'stack' in plotCfg else False
+    logy = plotCfg['logy'] if 'logy' in plotCfg else False
+    extralab = plotCfg['extralab'] if 'extralab' in plotCfg else ""
+    scaleSig = plotCfg['scaleSig'] if 'scaleSig' in plotCfg else 1
+
+
+    intLumiab = param.intLumi/1e+06
+    intLumi = "L = {:.0f} ab^{{-1}}".format(param.energy,intLumiab)
+    if hasattr(param, "intLumiLabel"):
+        intLumi = getattr(param, "intLumiLabel")
+
+    lt = "FCCAnalyses: FCC-hh Simulation (Delphes)"
+    rt = "#sqrt{{s}} = {:.1f} TeV,   L = {}".format(param.energy,intLumi)
+
+    if 'ee' in param.collider:
+        lt = "FCCAnalyses: FCC-ee Simulation (Delphes)"
+        rt = "#sqrt{{s}} = {:.1f} GeV,   {}".format(param.energy,intLumi)
+
+    customLabel=""
+    try:
+        customLabel=param.customLabel
+    except AttributeError:
+        print ('no customLable, using nothing...')
+
+
+
+    if stack:
+        if logy:
+            drawStack(output, ytitle, leg, lt, rt, param.formats, param.outdir, True , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, xtitle=xtitle)
+        else:
+            drawStack(output, ytitle, leg, lt, rt, param.formats, param.outdir, False , True , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, xtitle=xtitle)
+
+    else:
+        if logy:
+            drawStack(output, ytitle, leg, lt, rt, param.formats, param.outdir, True , False , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, xtitle=xtitle)
+        else:
+            drawStack(output, ytitle, leg, lt, rt, param.formats, param.outdir, False , False , histos, colors, param.ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, leg2, yields, plotStatUnc, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, xtitle=xtitle)
+
+
+
 
 #_____________________________________________________________________________________________________________
-def drawStack(name, ylabel, legend, leftText, rightText, formats, directory, logY, stacksig, histos, colors, ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, legend2=None, yields=None):
+def drawStack(name, ylabel, legend, leftText, rightText, formats, directory, logY, stacksig, histos, colors, ana_tex, extralab, scaleSig, customLabel, nsig, nbkg, legend2=None, yields=None, plotStatUnc=False, xmin=-1, xmax=-1, ymin=-1, ymax=-1, xtitle="", ytitle=""):
 
     canvas = ROOT.TCanvas(name, name, 600, 600)
     canvas.SetLogy(logY)
@@ -264,6 +461,10 @@ def drawStack(name, ylabel, legend, leftText, rightText, formats, directory, log
 
         if not stacksig:
             hStack.Draw("hist")
+            if plotStatUnc:
+                hUnc_bkg = formatStatUncHist(hStack.GetHists(), "bkg_only") # bkg-only uncertainty
+                hUnc_bkg.Draw("E2 SAME")
+            
 
     # define stacked signal histo
     hStackSig = ROOT.THStack("hstacksig","")
@@ -279,22 +480,38 @@ def drawStack(name, ylabel, legend, leftText, rightText, formats, directory, log
 
     if stacksig:
         hStack.Draw("hist")
+        if plotStatUnc:
+            hUnc_sig_bkg = formatStatUncHist(hStack.GetHists(), "sig_bkg") # sig+bkg uncertainty
+            hUnc_sig_bkg.Draw("E2 SAME")
 
-    xlabel = histos[0].GetXaxis().GetTitle()
+    xlabel = xtitle
+    if xlabel == "":
+        xlabel = histos[0].GetXaxis().GetTitle()
 
     if (not stacksig) and nbkg==0:
         hStackSig.Draw("hist nostack")
-        hStackSig.GetXaxis().SetTitle(xlabel)
+        if plotStatUnc:
+            for sHist in hStackSig.GetHists():
+                hUnc_sig = formatStatUncHist([sHist], "sig", 3245) # sigs uncertainty
+                hUnc_sig.Draw("E2 SAME")
+        if not isinstance(xlabel, list): hStackSig.GetXaxis().SetTitle(xlabel)
         hStackSig.GetYaxis().SetTitle(ylabel)
 
         hStackSig.GetYaxis().SetTitleOffset(1.95)
         hStackSig.GetXaxis().SetTitleOffset(1.40)
     else:
-        hStack.GetXaxis().SetTitle(xlabel)
+        if not isinstance(xlabel, list): hStack.GetXaxis().SetTitle(xlabel)
         hStack.GetYaxis().SetTitle(ylabel)
 
         hStack.GetYaxis().SetTitleOffset(1.95)
         hStack.GetXaxis().SetTitleOffset(1.40)
+
+    if isinstance(xlabel, list):
+        hStack.GetXaxis().SetLabelSize(1.1*hStack.GetXaxis().GetLabelSize())
+        hStack.GetXaxis().SetLabelOffset(1.5*hStack.GetXaxis().GetLabelOffset())
+        for i,label in enumerate(xlabel): hStack.GetXaxis().SetBinLabel(4+i*7+1, label) # check the weird binning for stack... doesn't follow the original hist bins
+        hStack.GetXaxis().LabelsOption("u")
+        print(hStack.GetHistogram().GetNbinsX())
 
     lowY=0.
     if logY:
@@ -318,6 +535,17 @@ def drawStack(name, ylabel, legend, leftText, rightText, formats, directory, log
         else:
             hStack.SetMaximum(1.3*maxh)
             hStack.SetMinimum(0.)
+
+    if ymin != -1 and ymax != -1:
+        if ymin <=0 and logY:
+            print('----> Error: Log scale can\'t start at: {}'.format(ymin))
+            sys.exit(3)
+        if stacksig:
+            hStack.SetMinimum(ymin)
+            hStack.SetMaximum(ymax)
+        else:
+            hStackSig.SetMinimum(ymin)
+            hStackSig.SetMaximum(ymax)
 
     if(nbkg>0):
         escape_scale_Xaxis=True
@@ -351,11 +579,21 @@ def drawStack(name, ylabel, legend, leftText, rightText, formats, directory, log
                 highX=hStacklast.GetBinCenter(hStacklast.GetNbinsX())+(hStacklast.GetBinWidth(1)/2.)
             hStack.GetXaxis().SetLimits(int(lowX),int(highX))
 
+    if xmin != -1 and xmax != -1:
+        if stacksig:
+            hStack.GetXaxis().SetLimits(xmin, xmax)
+        else:
+            hStackSig.GetXaxis().SetLimits(xmin, xmax)
+
     if not stacksig:
         if 'AAAyields' not in name and nbkg>0:
             hStackSig.Draw("same hist nostack")
         else:
-            hStackSig.Draw("hist nostack")
+            hStackSig.Draw("hist nostack")  
+        if plotStatUnc:
+            for sHist in hStackSig.GetHists():
+                hUnc_sig = formatStatUncHist([sHist], "sig", 3245) # sigs uncertainty
+                hUnc_sig.Draw("E2 SAME")
 
     legend.Draw()
     if legend2 != None:
@@ -513,12 +751,22 @@ def run(paramFile):
         splitLeg = param.splitLeg
     else:
         splitLeg = False
+        
+    if hasattr(param, "plotStatUnc"):
+        plotStatUnc = param.plotStatUnc
+    else:
+        plotStatUnc = False
+
+    if hasattr(param, "hists"):
+        for hName,plotCfg in param.hists.items():
+            runPlotsHistmaker(hName, param, plotCfg)
+        quit()
 
     counter=0
-    for var in param.variables:
+    for iVar,var in enumerate(param.variables):
         for label, sels in param.selections.items():
             for sel in sels:
-                hsignal,hbackgrounds=mapHistos(var,label,sel, param)
-                runPlots(var+"_"+label,sel,param,hsignal,hbackgrounds,param.extralabel[sel],splitLeg)
-                if counter==0: runPlots("AAAyields_"+label,sel,param,hsignal,hbackgrounds,param.extralabel[sel],splitLeg)
+                hsignal,hbackgrounds=mapHistos(var,label,sel, param, rebin=param.rebin[iVar] if hasattr(param, "rebin") and len(param.rebin) == len(param.variables) else 1)
+                runPlots(var+"_"+label,sel,param,hsignal,hbackgrounds,param.extralabel[sel],splitLeg,plotStatUnc)
+                if counter==0: runPlots("AAAyields_"+label,sel,param,hsignal,hbackgrounds,param.extralabel[sel],splitLeg,plotStatUnc)
         counter+=1
