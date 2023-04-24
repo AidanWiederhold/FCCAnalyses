@@ -19,7 +19,7 @@ args = parser.parse_args()
 ## to look up how many input files
 ## are used to produce each output
 ####################################
-with open("eos_cache.json") as f:
+with open(cfg.eos_cache) as f:
     fcache = json.load(f)
 
 ####################################
@@ -42,6 +42,7 @@ for fname in glob(f"{st1_path}/*.root"):
     index = os.path.basename(fname).replace('.root','')
     try:
         ind = int(index)
+        print(args.channel, args.evtype)
         nfiles = len(fcache[args.channel][args.evtype][args.dec]['samples'][ind])
     except:
         print(f'Error on index {index}')
