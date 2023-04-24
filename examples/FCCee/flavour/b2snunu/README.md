@@ -39,6 +39,7 @@ source ./setup.sh
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=../install
 make install
+cd ../../FCCAnalyses/examples/FCCee/flavour/b2snunu/
 ```
 
 ## To completely reset the environment (sometimes needed to match changes behind the scenes)
@@ -46,7 +47,7 @@ make install
 ```bash
 rm -r ./build;
 rm -r ./install;
-rm -r ./FCCeePhysicsPerformance/case-studies/flavour/tools/localPythonTools;
+rm -r ../FCCeePhysicsPerformance/case-studies/flavour/tools/localPythonTools;
 ```
 - Then restart your shell just to be sure local variables are dropped
 

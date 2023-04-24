@@ -6,4 +6,4 @@ source ./setup.sh
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=../install
 make install
-cd ../../
+cd ../../FCCAnalyses/examples/FCCee/flavour/b2snunu/

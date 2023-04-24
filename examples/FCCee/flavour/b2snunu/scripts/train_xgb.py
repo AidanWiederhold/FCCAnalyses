@@ -20,6 +20,20 @@ rc('text', usetex=True)
 #Local code
 import config as cfg
 
+#def plot_significances(significances, name, title="", x_label = "Feature Significance", y_label= "BDT Variables"):
+#    plt.clf()
+#    fig = plt.figure(20,20)
+
+def plot_correlations(df, name, title="", x_label="BDT Variables", y_label="BDT Variables"):
+    plt.clf()
+    #fig = plt.figure(20,20)
+    mat = plt.matshow(df.corr())
+    cb = plt.colorbar(mat)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.savefig(name)
+
 def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_root, ccbar_root, qqbar_root, output_root, output_joblib, roc_plot, decay):
 
     print(signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_root, ccbar_root, qqbar_root)
@@ -133,6 +147,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
 
     print("Feature importances")
     print(feature_importances)
+    #plot_significances(feature_importances)
 
     #Create ROC curves
     decisions = bdt.predict_proba(x)[:,1]
