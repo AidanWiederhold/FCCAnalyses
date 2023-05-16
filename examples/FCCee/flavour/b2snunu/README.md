@@ -8,48 +8,13 @@
 ## Initial Setup
 - Clone the repos (pull from someone's fork/branch if needed): [FCCeePhysicsPerformance](https://github.com/HEP-FCC/FCCeePhysicsPerformance) and [FCCAnalyses](https://github.com/HEP-FCC/FCCAnalyses)
 - Either follow the instructions below or just do: `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/setup.sh`
-- Start off in FCCeePhysicsPerformance to install Snakemake locally (hopefully it will get added to the FCC stack)
-```bash
-cd FCCeePhysicsPerformance/case-studies/flavour/tools
-source /cvmfs/fcc.cern.ch/sw/latest/setup.sh
-source install.sh $PWD/localPythonTools
-```
-- Now go to FCCAnalyses to pick up the FCC specific stuff
-```bash
-cd ../../../../FCCAnalyses/
-source ./setup.sh
-mkdir build install
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=../install
-make install
-pip3 install --user xgboost #hopefully I can get this to work in the initial setup
-```
 
-## When starting up a new shell either follow the instructions below or just do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/startup.sh`
-- Pick up local packages such as Snakemake
-```bash
-cd FCCeePhysicsPerformance/case-studies/flavour/tools
-source /cvmfs/fcc.cern.ch/sw/latest/setup.sh
-source ./localSetup.sh $PWD/localPythonTools
-```
-- Pick up FCC software # TODO do we really need to do this bit every time?
-```bash
-cd ../../../../FCCAnalyses/
-source ./setup.sh
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=../install
-make install
-cd ../../FCCAnalyses/examples/FCCee/flavour/b2snunu/
-```
+## When starting up a new shell do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/startup.sh` to reactivate the env
 
 ## To completely reset the environment (sometimes needed to match changes behind the scenes)
-- In the directory above FCCAnalyses and FCCeePhysicsPerformance
-```bash
-rm -r ./build;
-rm -r ./install;
-rm -r ../FCCeePhysicsPerformance/case-studies/flavour/tools/localPythonTools;
-```
+- In the directory above FCCAnalyses and FCCeePhysicsPerformance do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/clean_env.sh`
 - Then restart your shell just to be sure local variables are dropped
+- Then do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/setup.sh`
 
 <br />
 
@@ -65,7 +30,7 @@ The final file of the workflow that depends on all possible steps is `./output/s
 ## To run the workflow locally
 ```bash
 cd FCCAnalyses/examples/FCCee/flavour/b2snunu/
-snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120
+snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120 --use-conda
 ```
 
 ## To run the workflow on a Slurm cluster (deprecated method)

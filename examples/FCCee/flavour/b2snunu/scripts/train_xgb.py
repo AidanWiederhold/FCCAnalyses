@@ -140,6 +140,9 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     #Fit the model
     print("Training model")
     bdt.fit(x, y, sample_weight=weights)
+    data_dmatrix = xgb.DMatrix(data=x,label=y)
+    xgb_cv = cv(dtrain=data_dmatrix, params=config_dict, nfold=4, num_boost_round=50, early_stopping_rounds=10, metrics="auc", as_pandas=True, seed=123)
+    print(xgb_cv.head())
 
     feature_importances = pd.DataFrame(bdt.feature_importances_,
                                      index = vars_list,

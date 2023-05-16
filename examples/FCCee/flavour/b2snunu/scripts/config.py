@@ -8,23 +8,34 @@ logs = f"logs_new_var/"
 benchmarks = f"benchmarks_new_var/"
 input_mc = f"{outputs}/input_mc/"
 envs = "../envs/"
-eos_cache = "eos_cache_new_var.json"
+eos_cache = "eos_cache_PID.json"
 
 MC = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/"
+
+decays = ["Bd2KstNuNu", "Bd2Kstmm", "Bs2PhiNuNu", "Bd2KsNuNu", "Lb2LbNuNu"]#, "Bu2KNuNu"]
+#decays = ["Bd2KsNuNu", "Lb2LbNuNu"]
+PID_seps = ["0p0", "0p5", "1p0", "1p5", "2p0", "2p5", "3p0", "4p0", "5p0"]
+PID_sep_to_decay = {}
+for PID_sep in PID_seps:
+    if PID_sep == "0p0":
+        PID_sep_to_decay[PID_sep] = decays
+    else:
+        PID_sep_to_decay[PID_sep] = ["Bd2KstNuNu", "Bs2PhiNuNu"]
+
+#PID_seps = [0,0.5,1,1.5,2,2.5,3,4,5]
 
 event_types = {
     "p8_ee_Zbb_ecm91": ["inclusive", "signal"],
     "p8_ee_Zcc_ecm91": ["inclusive"],
     "p8_ee_Zuds_ecm91": ["inclusive"],
 }
-decays = ["Bd2KstNuNu", "Bs2PhiNuNu", "Bd2KsNuNu", "Lb2LbNuNu"]#, "Bu2KNuNu"]
-#decays = ["Bd2KsNuNu", "Lb2LbNuNu"]
 samples = set()
 
 label_map = { 'p8_ee_Zbb_ecm91': r'$Z\to b\bar{b}$',
               'p8_ee_Zcc_ecm91': r'$Z\to c\bar{c}$',
               'p8_ee_Zuds_ecm91': r'$Z\to q\bar{q}$',
               'Bd2KstNuNu': r'$B^0 \to K^{*0} \nu \bar{\nu}$',
+              'Bd2Kstmm': r'$B^0 \to K^{*0} \mu^{+} \mu^{-}$',
               'Bd2KsNuNu': r'$B^0 \to K^{0}_{S} \nu \bar{\nu}$',
               'Bs2PhiNuNu': r'$B_s^0 \to \phi \nu \bar{\nu}$',
               'Bu2KNuNu'  : r'$B^+ \to K^+ \nu \bar{nu}$',
@@ -34,6 +45,7 @@ label_map = { 'p8_ee_Zbb_ecm91': r'$Z\to b\bar{b}$',
 
 decay_to_candidates = {
     "Bd2KstNuNu": "KPi",
+    "Bd2Kstmm": "KPi",
     "Bs2PhiNuNu": "KK",
     #"Bu2KNuNu": "K",
     "Bd2KsNuNu": "PiPi",
@@ -42,6 +54,7 @@ decay_to_candidates = {
 
 decay_to_pdgids = {
     "Bd2KstNuNu": ["313", "511"],
+    "Bd2Kstmm": ["313", "511"],
     "Bs2PhiNuNu": ["333", "531"],
     #"Bu2KNuNu": ["321", "521"],
     "Bd2KsNuNu": ["310", "511"],
@@ -51,6 +64,18 @@ decay_to_pdgids = {
 # rough estimate from running a few files
 stage1_efficiencies = {
     "Bd2KstNuNu": {
+        "p8_ee_Zbb_ecm91": {
+            "signal": 0.82,
+            "inclusive": 0.19,
+        },
+        "p8_ee_Zcc_ecm91": {
+            "inclusive": 0.15,
+        },
+        "p8_ee_Zuds_ecm91": {
+            "inclusive": 0.0047,
+        },
+    },
+    "Bd2Kstmm": {
         "p8_ee_Zbb_ecm91": {
             "signal": 0.82,
             "inclusive": 0.19,
@@ -121,6 +146,18 @@ branching_fractions = {
 
 training_proportions = {
     "Bd2KstNuNu": {
+        "p8_ee_Zbb_ecm91": {
+            "signal": 140/1000,
+            "inclusive": 40/10000,
+        },
+        "p8_ee_Zcc_ecm91": {
+            "inclusive": 40/10000,
+        },
+        "p8_ee_Zuds_ecm91": {
+            "inclusive": 100/10000,
+        },
+    },
+    "Bd2Kstmm": {
         "p8_ee_Zbb_ecm91": {
             "signal": 140/1000,
             "inclusive": 40/10000,
@@ -246,12 +283,18 @@ KK_cut = f"{KK_cut})"
 PiPi_cut = f"{PiPi_cut})"
 pPi_cut = f"{pPi_cut})"
 mass_cuts = {"Bd2KstNuNu": KPi_cut,
+            "Bd2Kstmm": KPi_cut,
              "Bs2PhiNuNu": KK_cut,
              "Bd2KsNuNu": PiPi_cut,
              "Lb2LbNuNu": pPi_cut
             }
 
 truth_ids = {"Bd2KstNuNu": {"parent": 511,
+                            "candidate": 313,
+                            "children": [-211, 321],
+                            "siblings": [[-12, 12], [-14, 14], [-16, 16]],
+                            },
+            "Bd2Kstmm": {"parent": 511,
                             "candidate": 313,
                             "children": [-211, 321],
                             "siblings": [[-12, 12], [-14, 14], [-16, 16]],
@@ -359,6 +402,13 @@ def list_to_constraints(l):
     constraints = f"{constraints})"
     return constraints
 
+def chi2_to_misid_rate(value):
+    ## i think this is right but i may have made a mistake
+    import numpy as np
+    from scipy.stats import chi2 # perhaps this is already too many
+    misid_rate = (1-chi2.cdf(value**2,1))/2
+    return misid_rate
+
 #First stage BDT including event-level vars
 train_vars = ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_E",
@@ -421,11 +471,11 @@ train_var_lists = { "train_vars" : train_vars,
 
 
 #Decay modes used in first stage training and their respective file names
-mode_names = {"Bd2KstNuNu": "p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu",
-              "uds": "p8_ee_Zuds_ecm91",
-              "cc": "p8_ee_Zcc_ecm91",
-              "bb": "p8_ee_Zbb_ecm91"
-              }
+#mode_names = {"Bd2KstNuNu": "p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu",
+#              "uds": "p8_ee_Zuds_ecm91",
+#              "cc": "p8_ee_Zcc_ecm91",
+#              "bb": "p8_ee_Zbb_ecm91"
+#              }
 
 #Hemisphere energy difference cut, applied offline prior to MVA2 optimisation
 energy_difference_cut = ">5"
@@ -448,6 +498,7 @@ prod_frac = {"Bu": 0.43,
             }
 
 prod_frac["Bd2KstNuNu"] = prod_frac["Bd"]
+prod_frac["Bd2Kstmm"] = prod_frac["Bd"]
 prod_frac["Bd2KsNuNu"] = prod_frac["Bd"]
 prod_frac["Bs2PhiNuNu"] = prod_frac["Bs"]
 prod_frac["Bu2KNuNu"]   = prod_frac["Bu"]
@@ -455,6 +506,7 @@ prod_frac["Lb2LbNuNu"]   = prod_frac["Lb"]
 
 dec_frac = {}
 dec_frac["Bd2KstNuNu"] = 0.9975
+dec_frac["Bd2Kstmm"] = 0.9975
 dec_frac["Bs2PhiNuNu"] = 0.491
 dec_frac["Lb2LbNuNu"] = 0.639
 dec_frac["Bd2KsNuNu"] = 0.692
@@ -465,6 +517,7 @@ nZ = 3e12
 sens_scan_grid_points = 50
 sens_scan_bf_points = 25
 sens_scan_bf_range = { "Bd2KstNuNu": [-6,-2], # in powers of base 10 i.e. 1e-6 - 1e-2
+                        "Bd2Kstmm": [-6,-2],
                        "Bs2PhiNuNu": [-6,-2],
                        "Bd2KsNuNu": [-6,-2],
                        "Lb2LbNuNu": [-6,-2],
@@ -472,12 +525,14 @@ sens_scan_bf_range = { "Bd2KstNuNu": [-6,-2], # in powers of base 10 i.e. 1e-6 -
 
 # from Table 1 in CEPC paper
 signal_bfs = {"Bd2KstNuNu": 9.19e-6,
+              "Bd2Kstmm": 1e-5,
               "Bs2PhiNuNu": 9.93e-6,
               "Bu2KNuNu"  : 3.98e-6
              }
 
 # from Table 1 in CEPC paper
 sm_preds   = {"Bd2KstNuNu": (9.19e-6,0.99e-6),
+              "Bd2Kstmumu": (7e-7, 1e-7), # ask Meril
               "Bs2PhiNuNu": (9.93e-6,0.72e-6),
               "Bu2KNuNu"  : (3.98e-6,0.47e-6),
               "Lb2LbNuNu"  : (10.0e-6,1.0e-6), # TODO find the actual value
@@ -486,8 +541,11 @@ sm_preds   = {"Bd2KstNuNu": (9.19e-6,0.99e-6),
 
 # from Table 1 in CEPC paper
 best_limits = {"Bd2KstNuNu": 1.8e-5,
+               "Bd2Kstmumu": 7e-7, # just guessing, ask Meril
                "Bs2PhiNuNu": 5.4e-3,
                "Bu2KNuNu"  : 1.6e-5,
                "Lb2LbNuNu"  : 1.0e-5, # TODO find the actual value
                "Bd2KsNuNu"  : 2.6e-5,
               }
+
+        
