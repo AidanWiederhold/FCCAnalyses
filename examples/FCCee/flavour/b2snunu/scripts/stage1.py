@@ -5,8 +5,8 @@ from array import array
 print ("Load cxx analyzers ... ",)
 ROOT.gSystem.Load("libedm4hep")
 ROOT.gSystem.Load("libpodio")
-ROOT.gSystem.Load("libawkward")
-ROOT.gSystem.Load("libawkward-cpu-kernels")
+#ROOT.gSystem.Load("libawkward")
+#ROOT.gSystem.Load("libawkward-cpu-kernels")
 ROOT.gSystem.Load("libFCCAnalyses")
 
 ROOT.gErrorIgnoreLevel = ROOT.kFatal
@@ -33,7 +33,7 @@ class analysis():
         self.df = ROOT.RDataFrame("events", inputlist)
         print ("Input dataframe initialised!")
     #__________________________________________________________
-    def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid, training):
+    def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid, training, misid_rate):
         print("Running...")
         MVAFilter=f"EVT_MVA1>{MVA_cut}"
 
@@ -98,7 +98,20 @@ class analysis():
                .Define("MC_Vertex_PDG",  "FCCAnalyses::myUtils::get_MCpdgMCVertex(MCVertexObject, Particle)")
                .Define("MC_Vertex_PDGmother",  "FCCAnalyses::myUtils::get_MCpdgMotherMCVertex(MCVertexObject, Particle)")
                .Define("MC_Vertex_PDGgmother", "FCCAnalyses::myUtils::get_MCpdgGMotherMCVertex(MCVertexObject, Particle)")
+        )
+        if decay[:2] in ["Lb", "KS"]:
+            df4 = (df3
+                #############################################
+                ##               Build V0s                 ##
+                #############################################
+                    .Define("SecondaryTracks",   "VertexFitterSimple::get_NonPrimaryTracks( EFlowTrack_1,  RecoedPrimaryTracks )")
 
+                    .Define("V0_evt", "VertexFinderLCFIPlus::get_V0s(SecondaryTracks, PrimaryVertexObject, true)")
+            )
+        else:
+            df4 = df3
+
+        df5 = (df4
 
                #############################################
                ##              Build Reco Vertex          ##
@@ -118,7 +131,9 @@ class analysis():
                #############################################
                ##          Build RECO P with PID          ##
                #############################################
-               .Define("RecoPartPID" ,"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle)")
+               #.Define("MisIDRate", misid_rate)
+               .Define("NoMisIDPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, 0.)")
+               .Define("RecoPartPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, {misid_rate})")
                
 
                #############################################
@@ -299,7 +314,7 @@ class analysis():
            )
         
         if not training:
-            df4 = (df3
+            df6 = (df5
                # Build MVA 
                .Define("MVAVec", ROOT.computeModel, ("EVT_ThrustEmin_E",        "EVT_ThrustEmax_E",
                                                      "EVT_ThrustEmin_Echarged", "EVT_ThrustEmax_Echarged",
@@ -314,7 +329,7 @@ class analysis():
                .Filter(MVAFilter)
             )
         else:
-            df4 = df3
+            df6 = df5
 
         branchList = ROOT.vector('string')()
         desired_branches = [
@@ -371,7 +386,7 @@ class analysis():
             desired_branches.append("EVT_MVA1")
         for branchName in desired_branches:
             branchList.push_back(branchName)
-        df4.Snapshot("events", self.outname, branchList)
+        df6.Snapshot("events", self.outname, branchList)
 
 if __name__ == "__main__":
 
@@ -387,6 +402,7 @@ if __name__ == "__main__":
     parser.add_argument('--decay', required=True, type=str, help='Choose the decay to reconstruct.')
     parser.add_argument('--mva', default="", type=str, help='Path to the trained MVA ROOT file.')
     parser.add_argument("--training", default=False, action="store_const", const=True, help="prepare tuples for BDT training.")
+    parser.add_argument('--PID_sep', default="0p0", type=str, help='Percentage of particles to misid')
     args = parser.parse_args()
 
     if not args.training:
@@ -427,13 +443,14 @@ if __name__ == "__main__":
     print(f"Number of CPUs    : {n_cpus}")
     print("=============================================================================")
 
-    from config import decay_to_candidates, decay_to_pdgids
+    from config import decay_to_candidates, decay_to_pdgids, chi2_to_misid_rate
     candidates = decay_to_candidates[args.decay]
     child_pdgid, parent_pdgid = decay_to_pdgids[args.decay]
     import time
     start_time = time.time()
     analysis = analysis(input_files, args.output, n_cpus)
-    analysis.run(n_events, args.MVA_cut, args.decay, candidates, child_pdgid, parent_pdgid, args.training)
+    misid_rate = chi2_to_misid_rate(float(args.PID_sep.replace("p", ".")))
+    analysis.run(n_events, args.MVA_cut, args.decay, candidates, child_pdgid, parent_pdgid, args.training, misid_rate)
 
     elapsed_time = time.time() - start_time
     print  ("==============================COMPLETION SUMMARY=============================")

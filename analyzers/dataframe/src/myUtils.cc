@@ -1510,23 +1510,43 @@ sel_PID::operator()(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop
   return result;
 }
 
-
 ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>
 PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
 	     ROOT::VecOps::RVec<int> recind,
 	     ROOT::VecOps::RVec<int> mcind,
-	     ROOT::VecOps::RVec<edm4hep::MCParticleData> mc){
+	     ROOT::VecOps::RVec<edm4hep::MCParticleData> mc,
+       float misidRate=0.){
 
+  if (misidRate<0. || misidRate>1.){
+    throw std::invalid_argument("misidRate must be between 0 and 1!");
+  }
+
+  srand(10);
   for (size_t i = 0; i < recind.size(); ++i) {
 
+    float randomNumber = rand();
+    bool misid = randomNumber < misidRate*RAND_MAX;
+    std::cout << "MisID Rate: " << misidRate << ", MisIDed: " << misid << std::endl;
     //id a pion
     if (fabs(mc.at(mcind.at(i)).PDG)==211){
+      if (!(misid)){
 #if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
       recop.at(recind.at(i)).PDG = 211;
 #else
       recop.at(recind.at(i)).type = 211;
 #endif
       recop.at(recind.at(i)).mass = 0.13957039;
+      }
+      //mistake it for a kaon
+      else{
+        std::cout << misid "Mistaking a pion for kaon!" << std::endl;
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 321;
+#else
+      recop.at(recind.at(i)).type = 321;
+#endif
+      recop.at(recind.at(i)).mass = 0.493677;
+      }
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
 					   pow(recop.at(recind.at(i)).momentum.z,2) +
@@ -1534,12 +1554,24 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
     }
     //id a kaon
     else if (fabs(mc.at(mcind.at(i)).PDG)==321){
+      if (!(misid)){
 #if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
       recop.at(recind.at(i)).PDG = 321;
 #else
       recop.at(recind.at(i)).type = 321;
 #endif
       recop.at(recind.at(i)).mass = 0.493677;
+      }
+      //mistake it for a pion
+      else{
+        std::cout << "Mistaking a kaon for pion!" << std::endl;
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 211;
+#else
+      recop.at(recind.at(i)).type = 211;
+#endif
+      recop.at(recind.at(i)).mass = 0.13957039; 
+      }
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
 					   pow(recop.at(recind.at(i)).momentum.z,2) +
@@ -1870,52 +1902,7 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstNuNu(ROOT::VecOps::RVec<Ve
   return result;
 }
 
-ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
-								    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop){
-
-  ROOT::VecOps::RVec<FCCAnalysesComposite2> result;
-  int counter=0;
-  for (auto &p:vertex){
-    //not consider PV
-    if (p.vertex.primary==1){counter+=1;continue;}
-    //exactly 2 tracks
-    if (p.ntracks!=2){counter+=1;continue;}
-
-    //1 tracks id as kaon
-    int charge_k=0;
-    int nobj_k=0;
-    for (auto &r:p.reco_ind){
-      if (recop.at(r).type==321 ){
-	nobj_k+=1;
-	charge_k+=recop.at(r).charge;
-      }
-    }
-
-   //1 tracks id as pion
-    int charge_pi=0;
-    int nobj_pi=0;
-    for (auto &r:p.reco_ind){
-      if (recop.at(r).type==211){
-	nobj_pi+=1;
-	charge_pi+=recop.at(r).charge;
-      }
-    }
-    if (nobj_pi!=1){counter+=1; continue;}
-    if (nobj_k!=1){counter+=1; continue;}
-    if (charge_pi+charge_k!=0){counter+=1; continue;}
-
-    FCCAnalysesComposite2 comp;
-    comp.vertex = counter;
-    comp.particle = build_tlv(recop,p.reco_ind);
-    comp.charge = charge_pi+charge_k;
-
-    result.push_back(comp);
-    counter+=1;
-  }
-  return result;
-}
-
-ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstMuMu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2Kstmm(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
 								    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop){
 
   ROOT::VecOps::RVec<FCCAnalysesComposite2> result = build_Bd2KstNuNu(vertex, recop);
@@ -2029,7 +2016,6 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bu2KNuNu(ROOT::VecOps::RVec<Vert
       }
     }
     //select candidates with exactly 1 kaon and abs(charge) 1
-    std::cout << nobj_K << charge_K << std::endl;
     if (nobj_K!=1) continue;
     if (charge_K!=abs(1)) continue;
 
