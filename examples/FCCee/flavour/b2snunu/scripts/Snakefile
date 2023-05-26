@@ -309,7 +309,7 @@ rule training_tuples:
         input_files = []
         for tuple_id in tuple_ids:
             input_files.append(f"{input_location}{tuple_id}.root")
-        cmd = "python {cfg.analysis_scripts}stage1.py --output {output} --input {input_files} --decay {wildcards.decay} --training --PID_sep {wildcards.PID_sep} &> {log}"
+        cmd = "python -m memory_profiler {cfg.analysis_scripts}stage1.py --output {output} --input {input_files} --decay {wildcards.decay} --training --PID_sep {wildcards.PID_sep} &> {log}"
         shell(cmd)
 
 # for checking efficiencies
