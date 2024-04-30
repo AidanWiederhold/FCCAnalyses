@@ -920,6 +920,69 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> add_truthmatched2(ROOT::VecOps::RVec<F
   return comp;
 }
 
+ROOT::VecOps::RVec<ROOT::VecOps::RVec<float>> children_q2(ROOT::VecOps::RVec<edm4hep::MCParticleData> particles,
+                                      ROOT::VecOps::RVec<int> c1,
+                                      ROOT::VecOps::RVec<int> c2,
+                                      ROOT::VecOps::RVec<int> c3,
+                                      ROOT::VecOps::RVec<int> c4){
+  // results are in the order 12, 13, 23, 14, 24, 34
+  ROOT::VecOps::RVec<ROOT::VecOps::RVec<float>> result;
+  std::cout << particles.size() << " " << c1.size() << " " << c2.size() << " " << c3.size() << " " << c4.size() << std::endl;
+  for (size_t i = 0; i < particles.size(); ++i) {
+    ROOT::VecOps::RVec<float> event_result;
+    TLorentzVector TLV1;
+    TLorentzVector TLV2;
+    TLorentzVector TLV3;
+    TLorentzVector TLV4;
+    ROOT::VecOps::RVec<TLorentzVector> TLVs;
+    if (c1.at(i)!=-999){
+      std::cout << c1.at(i) << std::endl;
+      TLV1.SetXYZM(particles.at(c1.at(i)).momentum.x, particles.at(c1.at(i)).momentum.y, particles.at(c1.at(i)).momentum.z, particles.at(c1.at(i)).mass);
+      if (c2.at(i)!=-999){
+        std::cout << c2.at(i) << std::endl;
+        TLV2.SetXYZM(particles.at(c2.at(i)).momentum.x, particles.at(c2.at(i)).momentum.y, particles.at(c2.at(i)).momentum.z, particles.at(c2.at(i)).mass);
+        event_result.push_back((TLV1+TLV2).M2());
+        if (c3.at(i)!=-999){
+          std::cout << c3.at(i) << std::endl;
+          TLV3.SetXYZM(particles.at(c3.at(i)).momentum.x, particles.at(c3.at(i)).momentum.y, particles.at(c3.at(i)).momentum.z, particles.at(c3.at(i)).mass);
+          event_result.push_back((TLV1+TLV3).M2());
+          event_result.push_back((TLV2+TLV3).M2());
+          if (c4.at(i)!=-999){
+            std::cout << c4.at(i) << std::endl;
+            TLV4.SetXYZM(particles.at(c4.at(i)).momentum.x, particles.at(c4.at(i)).momentum.y, particles.at(c4.at(i)).momentum.z, particles.at(c4.at(i)).mass);
+            event_result.push_back((TLV1+TLV4).M2());
+            event_result.push_back((TLV2+TLV4).M2());
+            event_result.push_back((TLV3+TLV4).M2());
+          }
+          else{
+            for (size_t j = 0; j < 3; ++j){
+              event_result.push_back(-999.);
+            }
+          }
+        }
+        else{
+          for (size_t j = 0; j < 5; ++j){
+            event_result.push_back(-999.);
+          }
+        }
+      }
+      else{
+        for (size_t j = 0; j < 6; ++j){
+          event_result.push_back(-999.);
+        }
+      }
+    }
+    else{
+      for (size_t j = 0; j < 6; ++j){
+        event_result.push_back(-999.);
+      }
+    }
+  result.push_back(event_result);
+  }
+std::cout << result << std::endl;
+return result;
+}
+
 ROOT::VecOps::RVec<int> get_compmc(ROOT::VecOps::RVec<FCCAnalysesComposite> in){
 
   ROOT::VecOps::RVec<int> result;
@@ -1496,63 +1559,6 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>
 PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
 	     ROOT::VecOps::RVec<int> recind,
 	     ROOT::VecOps::RVec<int> mcind,
-	     ROOT::VecOps::RVec<edm4hep::MCParticleData> mc){
-
-  for (size_t i = 0; i < recind.size(); ++i) {
-    //id a pion
-    if (fabs(mc.at(mcind.at(i)).PDG)==211){
-      recop.at(recind.at(i)).type = 211;
-      recop.at(recind.at(i)).mass = 0.13957039;
-      recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
-					   pow(recop.at(recind.at(i)).momentum.y,2) +
-					   pow(recop.at(recind.at(i)).momentum.z,2) +
-					   pow(recop.at(recind.at(i)).mass,2));
-    }
-    //id a kaon
-    else if (fabs(mc.at(mcind.at(i)).PDG)==321){
-      recop.at(recind.at(i)).type = 321;
-      recop.at(recind.at(i)).mass = 0.493677;
-      recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
-					   pow(recop.at(recind.at(i)).momentum.y,2) +
-					   pow(recop.at(recind.at(i)).momentum.z,2) +
-					   pow(recop.at(recind.at(i)).mass,2));
-    }
-    //id a proton
-    else if (fabs(mc.at(mcind.at(i)).PDG)==2212){
-      recop.at(recind.at(i)).type = 2212;
-      recop.at(recind.at(i)).mass = 0.938272081;
-      recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
-					   pow(recop.at(recind.at(i)).momentum.y,2) +
-					   pow(recop.at(recind.at(i)).momentum.z,2) +
-					   pow(recop.at(recind.at(i)).mass,2));
-    }
-    //id an electron
-    else if (fabs(mc.at(mcind.at(i)).PDG)==11){
-      recop.at(recind.at(i)).type = 11;
-      recop.at(recind.at(i)).mass = 0.0005109989461;
-      recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
-					   pow(recop.at(recind.at(i)).momentum.y,2) +
-					   pow(recop.at(recind.at(i)).momentum.z,2) +
-					   pow(recop.at(recind.at(i)).mass,2));
-    }
-    //id an muon
-    else if (fabs(mc.at(mcind.at(i)).PDG)==13){
-      recop.at(recind.at(i)).type = 13;
-      recop.at(recind.at(i)).mass = 0.1056583745;
-      recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
-					   pow(recop.at(recind.at(i)).momentum.y,2) +
-					   pow(recop.at(recind.at(i)).momentum.z,2) +
-					   pow(recop.at(recind.at(i)).mass,2));
-    }
-  }
-  return recop;
-}
-
-/*
-ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>
-PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
-	     ROOT::VecOps::RVec<int> recind,
-	     ROOT::VecOps::RVec<int> mcind,
 	     ROOT::VecOps::RVec<edm4hep::MCParticleData> mc,
        float misidRate=0.){
 
@@ -1627,7 +1633,7 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
   }
   return recop;
 }
-*/
+
 
 
 ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> get_RP_atVertex(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,

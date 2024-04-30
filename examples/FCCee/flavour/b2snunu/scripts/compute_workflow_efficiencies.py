@@ -12,6 +12,7 @@ parser.add_argument('-c','--channel', required=True, type=str, help='Decay chann
 parser.add_argument('-e','--evtype', required=True, type=str, help='Event type (e.g. p8_ee_Zbb_ecm91)')
 parser.add_argument('-d','--dec'   , required=True, type=str, help='Decay type (e.g. signal / inclusive)')
 parser.add_argument('-o','--output', required=True, type=str, help='Output eff file path')
+parser.add_argument('--PID_sep', required=True, type=str, help='Kaon/Pion separation')
 args = parser.parse_args()
 
 ####################################
@@ -30,8 +31,8 @@ gen_evs_per_file = cfg.events_per_file[args.channel][args.evtype][args.dec]
 ####################################
 ## stage1 and stage 2 efficiencies
 ####################################
-st1_path = f"{cfg.outputs}root/mva_cut/{args.channel}/{args.evtype}/{args.dec}"
-st2_path = f"{cfg.outputs}root/mva_st2/{args.channel}/{args.evtype}/{args.dec}"
+st1_path = f"{cfg.outputs}root/{args.PID_sep}/mva_cut/{args.channel}/{args.evtype}/{args.dec}"
+st2_path = f"{cfg.outputs}root/{args.PID_sep}/mva_st2/{args.channel}/{args.evtype}/{args.dec}"
 n_gen_tot = 0
 n_proc_st1_tot = 0
 n_intree_st1_tot = 0
@@ -40,30 +41,36 @@ n_intree_st2_tot = 0
 # search for stage 1 paths
 for fname in glob(f"{st1_path}/*.root"):
     index = os.path.basename(fname).replace('.root','')
-    try:
-        ind = int(index)
-        print(args.channel, args.evtype)
-        nfiles = len(fcache[args.channel][args.evtype][args.dec]['samples'][ind])
-    except:
-        print(f'Error on index {index}')
-        continue
-    ngen = gen_evs_per_file * nfiles
-    tf_st1 = r.TFile(fname)
-    evsproc_st1 = tf_st1.Get("eventsProcessed").GetVal()
-    evsintree_st1 = tf_st1.Get("events").GetEntries()
-    #print(ind, nfiles, evsproc, evsintree)
-    n_gen_tot += ngen
-    n_proc_st1_tot += evsproc_st1
-    n_intree_st1_tot += evsintree_st1
-    # look for corresponding stage 2 path
-    st2fname = f'{st2_path}/{ind}.root'
-    tf_st2 = r.TFile(st2fname)
-    evsproc_st2 = tf_st2.Get("eventsProcessed").GetVal()
-    evsintree_st2 = tf_st2.Get("events").GetEntries()
-    n_proc_st2_tot += evsproc_st2
-    n_intree_st2_tot += evsintree_st2
-    if evsproc_st2 != evsintree_st1:
-        print(f'WARNING: inconsistency in events number for index {ind}')
+    #try:
+    #ind = int(index)
+    #ind = fcache[args.channel][args.evtype][args.dec]['expected_output'][args.PID_sep].index(fname)
+    index_in_name = [index in name for name in fcache[args.channel][args.evtype][args.dec]['expected_output'][args.PID_sep]]
+    if True in index_in_name:
+        ind = index_in_name.index(True)
+        print(args.channel, args.evtype, args.dec, fname, index, ind)
+        print(len(fcache[args.channel][args.evtype][args.dec]['samples'][args.PID_sep]))
+        nfiles = len(fcache[args.channel][args.evtype][args.dec]['samples'][args.PID_sep][ind])
+        #raise ValueError
+        #except:
+        #    print(f'Error on index {index}')
+        #    continue
+        ngen = gen_evs_per_file * nfiles
+        tf_st1 = r.TFile(fname)
+        evsproc_st1 = tf_st1.Get("eventsProcessed").GetVal()
+        evsintree_st1 = tf_st1.Get("events").GetEntries()
+        #print(ind, nfiles, evsproc, evsintree)
+        n_gen_tot += ngen
+        n_proc_st1_tot += evsproc_st1
+        n_intree_st1_tot += evsintree_st1
+        # look for corresponding stage 2 path
+        st2fname = f'{st2_path}/{index}.root'
+        tf_st2 = r.TFile(st2fname)
+        evsproc_st2 = tf_st2.Get("eventsProcessed").GetVal()
+        evsintree_st2 = tf_st2.Get("events").GetEntries()
+        n_proc_st2_tot += evsproc_st2
+        n_intree_st2_tot += evsintree_st2
+        if evsproc_st2 != evsintree_st1:
+            print(f'WARNING: inconsistency in events number for index {ind}')
 
 print('nGenerated: ', n_gen_tot)
 print('nProc (st1):', n_proc_st1_tot)

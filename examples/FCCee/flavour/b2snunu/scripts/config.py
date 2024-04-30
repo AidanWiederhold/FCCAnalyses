@@ -8,13 +8,13 @@ logs = f"logs_new_var/"
 benchmarks = f"benchmarks_new_var/"
 input_mc = f"{outputs}/input_mc/"
 envs = "../envs/"
-eos_cache = "eos_cache_PID.json"
+eos_cache = "eos_cache_PID_3.json"
 
 MC = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/"
 
-decays = ["Bd2KstNuNu", "Bd2Kstmm", "Bs2PhiNuNu", "Bd2KsNuNu", "Lb2LbNuNu"]#, "Bu2KNuNu"]
+decays = ["Bd2KstNuNu","Bd2Kstmm","Bs2PhiNuNu","Bd2KsNuNu","Lb2LbNuNu"]#, "Bu2KNuNu"]
 #decays = ["Bd2KsNuNu", "Lb2LbNuNu"]
-PID_seps = ["0p0", "0p5", "1p0", "1p5", "2p0", "2p5", "3p0", "4p0", "5p0"]
+PID_seps = ["0p0", "0p5", "1p0", "1p5", "2p0", "2p5", "3p0", "4p0", "5p0", "10p0"]
 PID_sep_to_decay = {}
 for PID_sep in PID_seps:
     if PID_sep == "0p0":
@@ -406,11 +406,13 @@ def chi2_to_misid_rate(value):
     ## i think this is right but i may have made a mistake
     import numpy as np
     from scipy.stats import chi2 # perhaps this is already too many
+    if value=="10p0":
+        return 0.
     misid_rate = (1-chi2.cdf(value**2,1))/2
     return misid_rate
 
 #First stage BDT including event-level vars
-train_vars = ["EVT_ThrustEmin_E",
+train_vars = {decay: ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_E",
               "EVT_ThrustEmin_Echarged",
               "EVT_ThrustEmax_Echarged",
@@ -420,23 +422,23 @@ train_vars = ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_Ncharged",
               "EVT_ThrustEmin_Nneutral",
               "EVT_ThrustEmax_Nneutral"
-              ]
+              ] for decay in decays}
 
 #First stage BDT including event-level vars and vertex vars
 #This is the default list used in the analysis
-train_vars_vtx = [*train_vars, *[
+train_vars_vtx = {decay: [*train_vars[decay], *[
                   "EVT_NtracksPV",
                   "EVT_NVertex",
-                  "EVT_NKPi",
+                  f"EVT_N{decay_to_candidates[decay]}",
                   "EVT_ThrustEmin_NDV",
                   "EVT_ThrustEmax_NDV",
                   "EVT_dPV2DVmin",
                   "EVT_dPV2DVmax",
                   "EVT_dPV2DVave"
-                  ]]
+                  ]] for decay in decays}
 
 #Second stage training variables
-train_vars_stage2 = ["EVT_CandMass",
+train_vars_stage2 = {decay: ["EVT_CandMass",
                 "EVT_CandN",
                 "EVT_CandVtxFD",
                 "EVT_CandVtxChi2",
@@ -455,13 +457,13 @@ train_vars_stage2 = ["EVT_CandMass",
                 "EVT_DVz0_ave",
                 "EVT_PVmass",
                 "EVT_Nominal_B_E"
-               ]
+               ] for decay in decays}
 
-fit_cut_vars = [ "EVT_MVA1",
+fit_cut_vars = {decay: [ "EVT_MVA1",
                  "EVT_MVA2",
                  "EVT_ThrustDiff_E",
                  "EVT_CandMass"
-               ]
+               ] for decay in decays}
 
 train_var_lists = { "train_vars" : train_vars,
                     "train_vars_vtx" : train_vars_vtx,
@@ -513,7 +515,7 @@ dec_frac["Bd2KsNuNu"] = 0.692
 dec_frac["Bu2KNuNu"]   = 1
 
 # for sensitivity estimate
-nZ = 3e12
+nZ = 3e12 # new baseline is 2e12
 sens_scan_grid_points = 50
 sens_scan_bf_points = 25
 sens_scan_bf_range = { "Bd2KstNuNu": [-6,-2], # in powers of base 10 i.e. 1e-6 - 1e-2

@@ -3,7 +3,7 @@
 
 def replace_PID(samples, PID):
     #print(samples)
-    samples = [sample.replace("0p0", PID) for sample in samples]
+    samples = [sample.replace("11p0", PID) for sample in samples]
     #print(samples)
     return samples
 
@@ -40,45 +40,45 @@ def cache(outf_name, sample_portion, group_size):
                 path = MC+f"{event_type}{decay_model_to_fname(decay_model, decay)}"
                 result = XRootD.glob_wildcards(path+"/events_{sample}.root")
                 result = result[0][0:int(len(result[0])*sample_portion)]
-                eos_cache[decay][event_type][decay_model]["samples"]["0p0"]=[]
+                eos_cache[decay][event_type][decay_model]["samples"]["11p0"]=[]
                 for i in range(1, max(math.floor(len(result)/_group_size),1)+1):
-                    eos_cache[decay][event_type][decay_model]["samples"]["0p0"].append(result[(i-1)*_group_size:i*_group_size])
+                    eos_cache[decay][event_type][decay_model]["samples"]["11p0"].append(result[(i-1)*_group_size:i*_group_size])
                 if result[i*_group_size:-1]!=[]:
-                    eos_cache[decay][event_type][decay_model]["samples"]["0p0"].append(result[i*_group_size:-1])
-                eos_cache[decay][event_type][decay_model]["expected_output"]["0p0"] = [f"{outputs}root/0p0/stage1/{decay}/{event_type}/{decay_model}/{i}.root" for i in range(len(eos_cache[decay][event_type][decay_model]["samples"]["0p0"]))]
-                eos_cache[decay][event_type][decay_model]["expected_output_ids"]["0p0"] = [i for i in range(len(eos_cache[decay][event_type][decay_model]["samples"]["0p0"]))]
+                    eos_cache[decay][event_type][decay_model]["samples"]["11p0"].append(result[i*_group_size:-1])
+                eos_cache[decay][event_type][decay_model]["expected_output"]["11p0"] = [f"{outputs}root/11p0/stage1/{decay}/{event_type}/{decay_model}/{i}.root" for i in range(len(eos_cache[decay][event_type][decay_model]["samples"]["11p0"]))]
+                eos_cache[decay][event_type][decay_model]["expected_output_ids"]["11p0"] = [i for i in range(len(eos_cache[decay][event_type][decay_model]["samples"]["11p0"]))]
                 
                 training_portion = training_proportions[decay][event_type][decay_model]
-                total_samples = len(eos_cache[decay][event_type][decay_model]["samples"]["0p0"])
-                eos_cache[decay][event_type][decay_model]["training"]["0p0"] = random.sample(eos_cache[decay][event_type][decay_model]["samples"]["0p0"], int(total_samples*training_portion))
-                eos_cache[decay][event_type][decay_model]["training_output"]["0p0"] = []
-                eos_cache[decay][event_type][decay_model]["training_output_ids"]["0p0"] = []
+                total_samples = len(eos_cache[decay][event_type][decay_model]["samples"]["11p0"])
+                eos_cache[decay][event_type][decay_model]["training"]["11p0"] = random.sample(eos_cache[decay][event_type][decay_model]["samples"]["11p0"], int(total_samples*training_portion))
+                eos_cache[decay][event_type][decay_model]["training_output"]["11p0"] = []
+                eos_cache[decay][event_type][decay_model]["training_output_ids"]["11p0"] = []
                 print(f"For {decay} the {event_type} {decay_model} BDT 1 training will feature {_group_size*int(total_samples*training_portion)} input files!")
-                for sample_group in eos_cache[decay][event_type][decay_model]["training"]["0p0"]:
-                    index = eos_cache[decay][event_type][decay_model]["samples"]["0p0"].index(sample_group)
-                    output_name = eos_cache[decay][event_type][decay_model]["expected_output"]["0p0"][index].replace("stage1", "training")
-                    eos_cache[decay][event_type][decay_model]["training_output"]["0p0"].append(output_name)
-                    eos_cache[decay][event_type][decay_model]["training_output_ids"]["0p0"].append(eos_cache[decay][event_type][decay_model]["expected_output_ids"]["0p0"][index])
-                    eos_cache[decay][event_type][decay_model]["samples"]["0p0"].remove(eos_cache[decay][event_type][decay_model]["samples"]["0p0"][index])
-                    eos_cache[decay][event_type][decay_model]["expected_output"]["0p0"].remove(eos_cache[decay][event_type][decay_model]["expected_output"]["0p0"][index])
-                    eos_cache[decay][event_type][decay_model]["expected_output_ids"]["0p0"].remove(eos_cache[decay][event_type][decay_model]["expected_output_ids"]["0p0"][index])
+                for sample_group in eos_cache[decay][event_type][decay_model]["training"]["11p0"]:
+                    index = eos_cache[decay][event_type][decay_model]["samples"]["11p0"].index(sample_group)
+                    output_name = eos_cache[decay][event_type][decay_model]["expected_output"]["11p0"][index].replace("stage1", "training")
+                    eos_cache[decay][event_type][decay_model]["training_output"]["11p0"].append(output_name)
+                    eos_cache[decay][event_type][decay_model]["training_output_ids"]["11p0"].append(eos_cache[decay][event_type][decay_model]["expected_output_ids"]["11p0"][index])
+                    eos_cache[decay][event_type][decay_model]["samples"]["11p0"].remove(eos_cache[decay][event_type][decay_model]["samples"]["11p0"][index])
+                    eos_cache[decay][event_type][decay_model]["expected_output"]["11p0"].remove(eos_cache[decay][event_type][decay_model]["expected_output"]["11p0"][index])
+                    eos_cache[decay][event_type][decay_model]["expected_output_ids"]["11p0"].remove(eos_cache[decay][event_type][decay_model]["expected_output_ids"]["11p0"][index])
 
                     
-                PID_seps = [PID_sep for PID_sep in cfg.PID_seps if PID_sep!="0p0"]
+                PID_seps = [PID_sep for PID_sep in cfg.PID_seps if PID_sep!="11p0"]
                 for PID_sep in PID_seps:
                     n_seps = len(PID_seps)
-                    eos_cache[decay][event_type][decay_model]["training"][PID_sep] = eos_cache[decay][event_type][decay_model]["training"]["0p0"]
+                    eos_cache[decay][event_type][decay_model]["training"][PID_sep] = eos_cache[decay][event_type][decay_model]["training"]["11p0"]
                     if PID_sep in eos_cache[decay][event_type][decay_model]["training_output"].keys():
                         print("before", decay, event_type, decay_model, PID_sep, eos_cache[decay][event_type][decay_model]["training_output"][PID_sep])
-                    eos_cache[decay][event_type][decay_model]["training_output"][PID_sep] = replace_PID(eos_cache[decay][event_type][decay_model]["training_output"]["0p0"], PID_sep)
-                    print(decay, event_type, decay_model, PID_sep, eos_cache[decay][event_type][decay_model]["training_output"][PID_sep])
-                    eos_cache[decay][event_type][decay_model]["training_output_ids"][PID_sep] = eos_cache[decay][event_type][decay_model]["training_output_ids"]["0p0"]
-                    n_entries = len(eos_cache[decay][event_type][decay_model]["samples"]["0p0"])
-                    eos_cache[decay][event_type][decay_model]["samples"][PID_sep] = eos_cache[decay][event_type][decay_model]["samples"]["0p0"][:int(max((n_entries/n_seps), 1))]
-                    n_entries = len(eos_cache[decay][event_type][decay_model]["expected_output"]["0p0"])
-                    eos_cache[decay][event_type][decay_model]["expected_output"][PID_sep] = replace_PID(eos_cache[decay][event_type][decay_model]["expected_output"]["0p0"][:int(max((n_entries/n_seps), 1))], PID_sep)
-                    n_entries = len(eos_cache[decay][event_type][decay_model]["expected_output_ids"]["0p0"])
-                    eos_cache[decay][event_type][decay_model]["expected_output_ids"][PID_sep] = eos_cache[decay][event_type][decay_model]["expected_output_ids"]["0p0"][:int(max((n_entries/n_seps), 1))]
+                    eos_cache[decay][event_type][decay_model]["training_output"][PID_sep] = replace_PID(eos_cache[decay][event_type][decay_model]["training_output"]["11p0"], PID_sep)
+                    #print(decay, event_type, decay_model, PID_sep, eos_cache[decay][event_type][decay_model]["training_output"][PID_sep])
+                    eos_cache[decay][event_type][decay_model]["training_output_ids"][PID_sep] = eos_cache[decay][event_type][decay_model]["training_output_ids"]["11p0"]
+                    n_entries = len(eos_cache[decay][event_type][decay_model]["samples"]["11p0"])
+                    eos_cache[decay][event_type][decay_model]["samples"][PID_sep] = eos_cache[decay][event_type][decay_model]["samples"]["11p0"][:int(max((3.*n_entries/n_seps), 1))]
+                    n_entries = len(eos_cache[decay][event_type][decay_model]["expected_output"]["11p0"])
+                    eos_cache[decay][event_type][decay_model]["expected_output"][PID_sep] = replace_PID(eos_cache[decay][event_type][decay_model]["expected_output"]["11p0"][:int(max((3.*n_entries/n_seps), 1))], PID_sep)
+                    n_entries = len(eos_cache[decay][event_type][decay_model]["expected_output_ids"]["11p0"])
+                    eos_cache[decay][event_type][decay_model]["expected_output_ids"][PID_sep] = eos_cache[decay][event_type][decay_model]["expected_output_ids"]["11p0"][:int(max((3.*n_entries/n_seps), 1))]
                     
         print(f"Finished {decay}!")
 

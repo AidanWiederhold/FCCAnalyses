@@ -21,7 +21,7 @@ import config as cfg
 
 def run(args):
 
-    varlist = cfg.train_var_lists[args.vars]
+    varlist = cfg.train_var_lists[args.vars][args.decay]
 
     nfiles = len(args.input)
 

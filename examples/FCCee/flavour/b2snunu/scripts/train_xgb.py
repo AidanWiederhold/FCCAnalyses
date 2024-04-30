@@ -20,6 +20,7 @@ rc('text', usetex=True)
 #Local code
 import config as cfg
 
+
 #def plot_significances(significances, name, title="", x_label = "Feature Significance", y_label= "BDT Variables"):
 #    plt.clf()
 #    fig = plt.figure(20,20)
@@ -40,9 +41,9 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
 
     #Bd -> Kst nu nu signal
     if(vars=="normal"):
-        vars_list = train_vars[decay]
+        vars_list = cfg.train_vars[decay]
     elif(vars=="vtx"):
-        vars_list = train_vars_vtx[decay]
+        vars_list = cfg.train_vars_vtx[decay]
     print("TRAINING VARS")
     print(vars_list)
 
@@ -71,6 +72,8 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
         print(f"{bkg = }")
         df_bkg[bkg] = pd.read_pickle(bkg_files[0])
         df_bkg[bkg] = pd.concat([pd.read_pickle(input_file) for input_file in bkg_files])
+        print(bkg, vars_list)
+        print(df_bkg[bkg].columns)
         df_bkg[bkg] = df_bkg[bkg][vars_list]
         available_events[bkg] = len(df_bkg[bkg])
         print(f"Number of available {bkg} events: {available_events[bkg]}")
@@ -86,7 +89,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     print("Actual efficiencies")
     print(stage1_efficiencies)
 
-    df_sig = df_sig.sample(int(1e6), random_state=10)
+    #df_sig = df_sig.sample(int(1e6), random_state=10)
     print(f"Number of signal events: {len(df_sig)}")
     print(f"{generated_events = }")
     for bkg in bkgs:
@@ -98,7 +101,8 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     for bkg in bkgs:
         print(f"Desired number of {bkg} events: {int(total_bkg*(stage1_efficiencies[bkg]*cfg.branching_fractions[bkg]/total_BF))}")
     for bkg in bkgs:
-        df_bkg[bkg] = df_bkg[bkg].sample(n=int(total_bkg*(stage1_efficiencies[bkg]*cfg.branching_fractions[bkg]/total_BF)),random_state=10)
+        if len(df_bkg[bkg])>int(total_bkg*(stage1_efficiencies[bkg]*cfg.branching_fractions[bkg]/total_BF)):
+            df_bkg[bkg] = df_bkg[bkg].sample(n=int(total_bkg*(stage1_efficiencies[bkg]*cfg.branching_fractions[bkg]/total_BF)),random_state=10)
         print(f"Number of {bkg} events in combined sample: {len(df_bkg[bkg])}")
         print(f"Wasted events for {bkg}: {available_events[bkg] - len(df_bkg[bkg])}")
 
@@ -141,7 +145,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     print("Training model")
     bdt.fit(x, y, sample_weight=weights)
     data_dmatrix = xgb.DMatrix(data=x,label=y)
-    xgb_cv = cv(dtrain=data_dmatrix, params=config_dict, nfold=4, num_boost_round=50, early_stopping_rounds=10, metrics="auc", as_pandas=True, seed=123)
+    xgb_cv = xgb.cv(dtrain=data_dmatrix, params=config_dict, nfold=4, num_boost_round=50, early_stopping_rounds=10, metrics="auc", as_pandas=True, seed=123)
     print(xgb_cv.head())
 
     feature_importances = pd.DataFrame(bdt.feature_importances_,

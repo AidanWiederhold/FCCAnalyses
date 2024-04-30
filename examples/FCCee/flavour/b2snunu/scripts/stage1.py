@@ -33,7 +33,6 @@ class analysis():
         self.df = ROOT.RDataFrame("events", inputlist)
         print ("Input dataframe initialised!")
     #__________________________________________________________
-    @profile
     def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid, training, misid_rate):
         print("Running...")
         MVAFilter=f"EVT_MVA1>{MVA_cut}"
@@ -133,9 +132,8 @@ class analysis():
                ##          Build RECO P with PID          ##
                #############################################
                #.Define("MisIDRate", misid_rate)
-               #.Define("NoMisIDPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, 0.)")
-               #.Define("RecoPartPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, {misid_rate})")
-               .Define("RecoPartPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle)")
+               .Define("NoMisIDPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, 0.)")
+               .Define("RecoPartPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, {misid_rate})")
                
 
                #############################################

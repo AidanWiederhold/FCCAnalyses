@@ -374,6 +374,9 @@ def main():
     parser.add_argument("--output_path", type=str, default=None, help="Output file")
     args = parser.parse_args()
 
+    args.path = "/".join(args.path.split("/")[:-2])
+    args.path_eff = "/".join(args.path_eff.split("/")[:-2])
+
     #args.path = args.path or f"{default_base_path}/mva_st2_pkl/{args.channel}"
     #args.path_eff = args.path_eff or f"{default_base_path}/efficiency_st2/{args.channel}"
     #args.plot_path = args.plot_path or f"plots/{args.channel}"

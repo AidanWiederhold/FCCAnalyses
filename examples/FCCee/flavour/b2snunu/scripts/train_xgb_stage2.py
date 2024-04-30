@@ -35,7 +35,7 @@ def run(args):
     print('    qqbar:', args.qqbar)
 
 
-    vars_list = cfg.train_vars_stage2
+    vars_list = cfg.train_var_lists[args.vars][args.decay]
     print("TRAINING VARS")
     print(vars_list)
 
@@ -56,7 +56,7 @@ def run(args):
 
     df_sig = pd.read_pickle( args.signal )
 
-    df_sig = df_sig.sample(int(1e6), random_state=10)
+    #df_sig = df_sig.sample(int(1e6), random_state=10)
     print(f"Number of signal events: {len(df_sig)}")
 
     df_bkg = {}
@@ -166,6 +166,7 @@ def main():
     parser.add_argument('--output_joblib', type=str, required=True, help='Select the output file.')
     parser.add_argument('--roc_plot', type=str, required=True, help='Select the output file.')
     parser.add_argument('--decay', type=str, required=True, help='Select the decay.')
+    parser.add_argument('--vars', type=str, required=True, help='Select the decay.')
 
     args = parser.parse_args()
 

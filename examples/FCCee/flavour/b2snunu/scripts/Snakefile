@@ -105,9 +105,10 @@ rule sensitivity:
         plt_path = directory(cfg.outputs+"plots/{PID_sep}/sensitivity/{decay}")
     log: cfg.logs+"{PID_sep}/sensitivity/{decay}.log"
     run:
-        path = cfg.outputs+"root/{PID_sep}/mva_st2_pkl/"
-        path_eff = cfg.outputs+"root/{PID_sep}/efficiency_st2/"
-        cmd = "python {cfg.analysis_scripts}sensitivity.py --channel {wildcards.decay} --path {path}{wildcards.decay} --path_eff {path_eff}{wildcards.decay} --plot_path {output.plt_path} --output_path {output.out_path} &> {log}"
+        #path = cfg.outputs+"root/{wildcards.PID_sep}/mva_st2_pkl/"
+        #path_eff = cfg.outputs+"root/{wildcards.PID_sep}/efficiency_st2/"
+        cmd = "python {cfg.analysis_scripts}sensitivity.py --channel {wildcards.decay} --path {input.signal} --path_eff {input.signal_eff} --plot_path {output.plt_path} --output_path {output.out_path} &> {log}"
+        #print(cmd)
         shell(cmd)
 
 rule st_two_efficiency:
@@ -115,7 +116,7 @@ rule st_two_efficiency:
     output: cfg.outputs+"root/{PID_sep}/efficiency_st2/{decay}/{event_type}/{decay_model}_eff.json"
     log: cfg.logs+"{PID_sep}/efficiency_st2/{decay}/{event_type}/{decay_model}.log"
     run:
-        cmd = "python {cfg.analysis_scripts}compute_workflow_efficiencies.py --channel {wildcards.decay} --evtype {wildcards.event_type} --dec {wildcards.decay_model} --output {output} &> {log}"
+        cmd = "python {cfg.analysis_scripts}compute_workflow_efficiencies.py --channel {wildcards.decay} --evtype {wildcards.event_type} --dec {wildcards.decay_model} --output {output} --PID_sep {wildcards.PID_sep} &> {log}"
         shell(cmd)
 
 rule st_two_pickle:
@@ -123,7 +124,7 @@ rule st_two_pickle:
     output: cfg.outputs+"root/{PID_sep}/mva_st2_pkl/{decay}/{event_type}/{decay_model}.pkl"
     log: cfg.logs+"{PID_sep}/mva_st2_hadd/{decay}/{event_type}/{decay_model}.log"
     run:
-        cmd = "python {cfg.analysis_scripts}pickler.py --input {input} --output {output} --vars fit_cut_vars &> {log}"
+        cmd = "python {cfg.analysis_scripts}pickler.py --input {input} --output {output} --decay {wildcards.decay} --vars fit_cut_vars &> {log}"
         shell(cmd)
 
 rule st_two_mva_plots:
@@ -170,7 +171,7 @@ rule st_two_train_xgb:
         roc_plot = cfg.outputs+"plots/{PID_sep}/xgb_st2/ROC/{decay}.pdf",
     log: cfg.logs+"{PID_sep}/xgb_st2/{decay}.log"
     #benchmark: cfg.benchmarks+"xgb/{decay}.txt"
-    shell: "python {cfg.analysis_scripts}/train_xgb_stage2.py --decay {wildcards.decay} --bbbar {input.bbbar} --ccbar {input.ccbar} --qqbar {input.qqbar} --signal {input.signal} --bbbar_eff {input.bbbar_eff} --ccbar_eff {input.ccbar_eff} --qqbar_eff {input.qqbar_eff} --signal_eff {input.signal_eff} --output {output.root} --output_joblib {output.joblib} --roc_plot {output.roc_plot} &> {log}"
+    shell: "python {cfg.analysis_scripts}/train_xgb_stage2.py --decay {wildcards.decay} --bbbar {input.bbbar} --ccbar {input.ccbar} --qqbar {input.qqbar} --signal {input.signal} --bbbar_eff {input.bbbar_eff} --ccbar_eff {input.ccbar_eff} --qqbar_eff {input.qqbar_eff} --signal_eff {input.signal_eff} --output {output.root} --output_joblib {output.joblib} --roc_plot {output.roc_plot} --vars train_vars_stage2 &> {log}"
 
 
 rule st_two_prepare_training:
@@ -265,7 +266,7 @@ rule mva_tuples:
         input_files = []
         for tuple_id in tuple_ids:
             input_files.append(f"{input_location}{tuple_id}.root")
-        cmd = "python {cfg.analysis_scripts}stage1.py --output {output} --input {input_files} --decay {wildcards.decay} --mva {input} &> {log}"
+        cmd = "python -m memory_profiler {cfg.analysis_scripts}stage1.py --output {output} --input {input_files} --decay {wildcards.decay} --mva {input} &> {log}"
         shell(cmd)
 
 # snakemake ./output/xgb/Bd2KstNuNu.root -s ./scripts/Snakefile --latency-wait 10 --jobs 25; mv ./slurm-* ./SlurmLogs/
@@ -294,9 +295,9 @@ rule pickle:
     output: cfg.outputs+"root/{PID_sep}/pickled/{decay}/{event_type}/{decay_model}/{tuple_id}.pkl"
     log: cfg.logs+"{PID_sep}/pickled/{decay}/{event_type}/{decay_model}/{tuple_id}.log"
     #benchmark: cfg.benchmarks+"pickled/{decay}/{event_type}/{decay_model}/{tuple_id}.txt"
-    shell: "python {cfg.analysis_scripts}/pickler.py --input {input} --output {output} --vars train_vars_vtx &> {log}"
+    shell: "python {cfg.analysis_scripts}/pickler.py --input {input} --output {output} --vars train_vars_vtx --decay {wildcards.decay} &> {log}"
 
-# test with python ./scripts/stage1.py --output ./test_output/stage1_Bd2KstNuNu.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91/events_132614370.root --decay Bd2KstNuNu --training
+# test with python ./scripts/stage1.py --output ./test_240430_stage1_Bd2KstNuNu.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91/events_132614370.root --decay Bd2KstNuNu --training
 # python ./scripts/stage1.py --output ./Bu2KNuNu_test.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bu2KNuNu/events_178153306.root --decay Bu2KNuNu --training
 rule training_tuples:
     output: cfg.outputs+"root/{PID_sep}/training/{decay}/{event_type}/{decay_model}/{tuple_id}.root"
@@ -310,6 +311,21 @@ rule training_tuples:
         for tuple_id in tuple_ids:
             input_files.append(f"{input_location}{tuple_id}.root")
         cmd = "python -m memory_profiler {cfg.analysis_scripts}stage1.py --output {output} --input {input_files} --decay {wildcards.decay} --training --PID_sep {wildcards.PID_sep} &> {log}"
+        shell(cmd)
+
+rule stage0:
+    output: cfg.outputs+"root/stage0/{decay}/{event_type}/{decay_model}/{tuple_id}.root"
+    log: cfg.logs+"stage0/{decay}/{event_type}/{decay_model}/{tuple_id}.log"
+    #benchmark: cfg.benchmarks+"stage0/{decay}/{event_type}/{decay_model}/{tuple_id}.txt"
+    run:
+        proxy_output = output[0].replace("stage0", "10p0/training")
+        desired_index = eos_cache[wildcards.decay][wildcards.event_type][wildcards.decay_model]["training_output"]["10p0"].index(proxy_output)
+        tuple_ids = eos_cache[wildcards.decay][wildcards.event_type][wildcards.decay_model]["training"]["10p0"][desired_index]
+        input_location = f"{cfg.MC}{wildcards.event_type}{cfg.decay_model_to_fname(wildcards.decay_model, wildcards.decay)}/events_"
+        input_files = []
+        for tuple_id in tuple_ids:
+            input_files.append(f"{input_location}{tuple_id}.root")
+        cmd = "python -m memory_profiler {cfg.analysis_scripts}stage0.py --output {output} --input {input_files} --decay {wildcards.decay} &> {log}"
         shell(cmd)
 
 # for checking efficiencies
