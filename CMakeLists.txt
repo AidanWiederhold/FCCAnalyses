@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.16.9)
 
 
-project(FCCAnalyses CXX)
+project(FCCAnalyses VERSION 0.9.0
+                    LANGUAGES CXX
+)
 
 #--- RPATH settings -----------------------------------------------------------
 
@@ -47,7 +49,7 @@ set(INSTALL_INCLUDE_DIR include CACHE PATH
 #--- Declare C++ Standard -----------------------------------------------------
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "")
-if(NOT CMAKE_CXX_STANDARD MATCHES "17")
+if(NOT CMAKE_CXX_STANDARD MATCHES "17|20")
   message(FATAL_ERROR "Unsupported C++ standard: ${CMAKE_CXX_STANDARD}")
 endif()
 message (STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
@@ -139,6 +141,9 @@ file(GLOB _man_files_1 man/man1/*.1)
 install(FILES ${_man_files_1} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
 file(GLOB _man_files_7 man/man7/*.7)
 install(FILES ${_man_files_7} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man7)
+
+
+install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX}/share/examples)
 
 #--- Descend into subdirectories ----------------------------------------------
 

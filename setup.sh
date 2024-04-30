@@ -15,13 +15,21 @@ if [ "${0}" != "${BASH_SOURCE}" ]; then
     source /cvmfs/sw.hsf.org/key4hep/setup.sh
   fi
 
+  if [ -z "${KEY4HEP_STACK}" ]; then
+    echo "----> Error: Key4hep stack not setup correctly! Aborting..."
+    return 1
+  fi
+
   echo "----> Info: Setting up environment variables..."
   export PYTHONPATH=${LOCAL_DIR}/python:${PYTHONPATH}
   export PYTHONPATH=${LOCAL_DIR}/install/python:${PYTHONPATH}
+  export PYTHONPATH=${LOCAL_DIR}/install/share/examples:${PYTHONPATH}
   export PATH=${LOCAL_DIR}/bin:${PATH}
   export PATH=${LOCAL_DIR}/install/bin:${PATH}
   export LD_LIBRARY_PATH=${LOCAL_DIR}/install/lib:${LD_LIBRARY_PATH}
   export CMAKE_PREFIX_PATH=${LOCAL_DIR}/install:${CMAKE_PREFIX_PATH}
+
+  export ROOT_INCLUDE_PATH=`fastjet-config --prefix`/include:${ROOT_INCLUDE_PATH}
   export ROOT_INCLUDE_PATH=${LOCAL_DIR}/install/include:${ROOT_INCLUDE_PATH}
 
   export ONNXRUNTIME_ROOT_DIR=`python -c "import onnxruntime; print(onnxruntime.__path__[0]+'/../../../..')" 2> /dev/null`
