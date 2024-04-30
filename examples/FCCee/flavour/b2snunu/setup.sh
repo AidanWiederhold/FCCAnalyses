@@ -1,5 +1,6 @@
 source /cvmfs/fcc.cern.ch/sw/latest/setup.sh
 #source /cvmfs/sw.hsf.org/spackages6/key4hep-stack/2023-01-15/x86_64-centos7-gcc11.2.0-opt/csapx/setup.sh
+# source /cvmfs/sw.hsf.org/key4hep/setup.sh -r 2024-04-12
 cd FCCeePhysicsPerformance/case-studies/flavour/tools
 source install.sh $PWD/localPythonTools
 source localSetup.sh $PWD/localPythonTools

@@ -33,7 +33,6 @@ class analysis():
         self.df = ROOT.RDataFrame("events", inputlist)
         print ("Input dataframe initialised!")
     #__________________________________________________________
-    @profile
     def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid, training, misid_rate):
         print("Running...")
         MVAFilter=f"EVT_MVA1>{MVA_cut}"
@@ -190,7 +189,7 @@ class analysis():
                #############################################
                ##        Build Kstz -> KPi  candidates      ##
                #############################################
-               .Define(f"{candidates}Candidates",         f"FCCAnalyses::myUtils::build_{decay}(VertexObject,RecoPartPIDAtVertex)")
+               .Define(f"{candidates}Candidates",         f"FCCAnalyses::myUtils::build_{decay}(MCVertexObject,RecoPartPIDAtVertex)")
 
 
                #############################################
