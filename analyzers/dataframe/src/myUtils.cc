@@ -2066,7 +2066,11 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bu2KNuNu(ROOT::VecOps::RVec<Vert
     int charge_K=0;
     int nobj_K=0;
     for (auto &r:vertex.at(i).reco_ind){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      if (recop.at(r).PDG==321 ){
+#else
       if (recop.at(r).type==321 ){
+#endif
 	      nobj_K+=1;
 	      charge_K+=recop.at(r).charge;
       }
