@@ -1519,7 +1519,11 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
   for (size_t i = 0; i < recind.size(); ++i) {
     //id a pion
     if (fabs(mc.at(mcind.at(i)).PDG)==211){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 211;
+#else
       recop.at(recind.at(i)).type = 211;
+#endif
       recop.at(recind.at(i)).mass = 0.13957039;
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
@@ -1528,7 +1532,11 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
     }
     //id a kaon
     else if (fabs(mc.at(mcind.at(i)).PDG)==321){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 321;
+#else
       recop.at(recind.at(i)).type = 321;
+#endif
       recop.at(recind.at(i)).mass = 0.493677;
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
@@ -1537,7 +1545,11 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
     }
     //id a proton
     else if (fabs(mc.at(mcind.at(i)).PDG)==2212){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 2212;
+#else
       recop.at(recind.at(i)).type = 2212;
+#endif
       recop.at(recind.at(i)).mass = 0.938272081;
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
@@ -1546,7 +1558,11 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
     }
     //id an electron
     else if (fabs(mc.at(mcind.at(i)).PDG)==11){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 11;
+#else
       recop.at(recind.at(i)).type = 11;
+#endif
       recop.at(recind.at(i)).mass = 0.0005109989461;
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
@@ -1555,7 +1571,11 @@ PID(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop,
     }
     //id an muon
     else if (fabs(mc.at(mcind.at(i)).PDG)==13){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      recop.at(recind.at(i)).PDG = 13;
+#else
       recop.at(recind.at(i)).type = 13;
+#endif
       recop.at(recind.at(i)).mass = 0.1056583745;
       recop.at(recind.at(i)).energy = sqrt(pow(recop.at(recind.at(i)).momentum.x,2) +
 					   pow(recop.at(recind.at(i)).momentum.y,2) +
@@ -1980,7 +2000,11 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Lb2LbNuNu(ROOT::VecOps::RVec<Ver
     int charge_p=0;
     int nobj_p=0;
     for (auto &r:p.reco_ind){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      if (recop.at(r).PDG==2212 ){
+#else
       if (recop.at(r).type==2212 ){
+#endif
 	nobj_p+=1;
 	charge_p+=recop.at(r).charge;
       }
@@ -1990,7 +2014,11 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Lb2LbNuNu(ROOT::VecOps::RVec<Ver
     int charge_pi=0;
     int nobj_pi=0;
     for (auto &r:p.reco_ind){
+#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+      if (recop.at(r).PDG==211){
+#else
       if (recop.at(r).type==211){
+#endif
 	nobj_pi+=1;
 	charge_pi+=recop.at(r).charge;
       }
