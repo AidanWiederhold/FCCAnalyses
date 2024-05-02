@@ -1,0 +1,69 @@
+# Contact
+- Yasmine Amhis (yasmine.sara.ahmis@cern.ch)
+- Matt Kenzie (matthew.william.kenzie@cern.ch)
+- Aidan Wiederhold (aidan.richard.wiederhold@cern.ch)
+
+# Environment Setup
+
+## Initial Setup
+- Clone the repos (pull from someone's fork/branch if needed): [FCCAnalyses](https://github.com/HEP-FCC/FCCAnalyses)
+- `cd ./FCCAnalyses`
+- Activate a singularity container (might not be needed, depends on your OS) `singularity exec --bind /cvmfs,/run,/home,/storage /cvmfs/cernvm-prod.cern.ch/cvm4 bash`
+- Either follow the instructions below or just do: `source ./examples/FCCee/flavour/b2snunu/setup.sh`
+
+## When starting up a new shell do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/startup.sh` to reactivate the env
+
+## To completely reset the environment (sometimes needed to match changes behind the scenes)
+- In the directory above FCCAnalyses and FCCeePhysicsPerformance do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/clean_env.sh`
+- Then restart your shell just to be sure local variables are dropped
+- Then do `source ./FCCAnalyses/examples/FCCee/flavour/b2snunu/setup.sh`
+
+<br />
+
+# Running The Analysis
+## Where To Run From
+All of the code used in this analysis is designed to be used from the `FCCAnalyses/examples/FCCee/flavour/b2snunu/` directory assuming that the `FCCAnalyses` and `FCCeePhysicsPerformance` repositories have been cloned alongside each other.
+
+## EOS Cache
+In order to speed up Snakemake solving the workflow we cache the files available in EOS in a JSON, using `scripts/eos_cacher.py` so that Snakemake doesn't need to verify their existence every time it runs. However the current environment doesn't include XRootD which is used to glob the EOS directory remotely. Instead of the analysis environment you should use any environment with XRootD available to create the bookkeeping json and then proceed to use the analysis environment described above for the rest of the analysis. Hopefully I can get XRootD working in the analysis environment so we can avoid switching environments just for this. A suitable environment for running `scripts/eos_cacher.py` can be created by doing `mamba env create -f eos_cache_env.yaml` using the `yaml` in `FCCAnalyses/examples/FCCee/flavour/b2snunu/`. The environment can then be activated by doing `conda activate FCC-b2snunu`.
+
+The final file of the workflow that depends on all possible steps is `./output/snakemake_flags/all` so request this from Snakemake if you want to run the entire analysis.
+
+## To run the workflow locally
+```bash
+cd FCCAnalyses/examples/FCCee/flavour/b2snunu/
+snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120 --use-conda
+```
+
+## To run the workflow on a Slurm cluster (deprecated method)
+```bash
+cd FCCAnalyses/examples/FCCee/flavour/b2snunu/
+snakemake <target_output> -s ./scripts/Snakefile --jobs N --latency-wait 120 --cluster ./scripts/slurm_wrapper.py --use-conda --max-status-checks-per-second 0.1; mv ./slurm-* ./SlurmLogs
+```
+Other cluster types are possible but require a different wrapper which shouldn't be hard to make based off of our Slurm one.
+
+## To run the workflow on a cluster (new method)
+```bash
+TODO
+```
+<br />
+
+# Workflow Description
+
+## Workflow Control
+- `scripts/config.py` defines all objects that are common to the various scripts. In particular any non-integer wildcards used in the `Snakefile` have their constraints defined based on lists in `config.py`.
+- `scripts/Snakefile` defines all the rules and their wildcards that control the workflow.
+- `scripts/eos_cacher.py` creates a bookkeeping `json` for all the MC to avoid telling Snakemake about it all directly as that results in extremely slow workflow solving. This also groups the MC for grouped processing by analysis scripts and picks which portion of the MC will be used for training/testing the BDTs.
+
+## BDT and Initial Tuple Production
+- `scripts/stage1.py` is used in `training` mode to produce some tuples from a randomly selected (by `scripts/eos_cacher.py`) 20% of the available MC to be used for training the BDT.
+- NOT IMPLEMENTED `scripts/pickler.py` is used to turn the output of `scripts/stage1.py` into `pickle` files for input to `XGBoost`.
+- `FCCeePhysicsPerformance/case-studies/flavour/b2snunu/train_xgb.py` is used to train a BDT and save the weights.
+- `scripts/stage1.py` is then used not in `training` mode to produce tuples with an MVA branch but no MVA cut applied.
+- `scripts/mva_plot.py` produces plots of MVA response in training/testing tuples to study the performance.
+- NOT IMPLEMENTED `scripts/mva_cut.py` finds an optimal cut to apply to the tuples.
+- NOT IMPLEMENTED `scripts/bkg_types.py` adds branches to the tuples corresponding to the true PDG IDs of the signal candidate, their siblings and (grand)parents to be used to determine the types of background decays present after the MVA filtering.
+<br />
+
+# What to do if something breaks
+- Check if `master` has been updated in either FCCAnalyses or FCCeePhysicsPerformance as this may be related to some deeper changes in the stack that are harder to track. Pulling these updates should hopefully fix things.
