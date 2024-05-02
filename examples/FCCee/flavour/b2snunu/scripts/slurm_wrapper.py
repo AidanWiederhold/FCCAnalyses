@@ -45,7 +45,7 @@ else:
 
 # Open a temporary file for the job submission script
 with NamedTemporaryFile(mode="w", prefix=prefix) as sub_file:
-    sub_file.write(f"#!/bin/bash \n")
+    sub_file.write(f"#!/bin/singularity bash \n")
     sub_file.write(f"#SBATCH --ntasks=1 \n")
     sub_file.write(f"#SBATCH --mem-per-cpu=3997 \n")
     if "rule" in job_props: # not a grouped job
@@ -70,5 +70,5 @@ with NamedTemporaryFile(mode="w", prefix=prefix) as sub_file:
     # Now submit this slurm script, and delete the temporary file
     sub_file.flush()
     #subprocess.call( ["sbatch", "-A", "taskfarm", sub_file.name, ">", logfile] )
-    subprocess.call( ["sbatch", sub_file.name, ">", logfile] )
+    subprocess.call( ["sbatch", sub_file.name, ">", logfile] , shell=True)
 
