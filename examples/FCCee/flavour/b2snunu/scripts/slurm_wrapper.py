@@ -57,7 +57,7 @@ with NamedTemporaryFile(mode="w", prefix=prefix) as sub_file:
             sub_file.write(f"#SBATCH --cpus-per-task=1 \n")
         else:
             sub_file.write(f"#SBATCH --time=24:00:00 \n")
-            sub_file.write(f"#SBATCH --cpus-per-task=8 \n")
+            sub_file.write(f"#SBATCH --cpus-per-task=4 \n")
     else:
         sub_file.write(f"#SBATCH --time=24:00:00 \n")
         sub_file.write(f"#SBATCH --cpus-per-task=4 \n")

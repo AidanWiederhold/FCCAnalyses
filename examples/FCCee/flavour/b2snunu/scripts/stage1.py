@@ -1,6 +1,7 @@
 import sys
 import ROOT
 from array import array
+import config as cfg
 
 print ("Load cxx analyzers ... ",)
 ROOT.gSystem.Load("libedm4hep")
@@ -399,7 +400,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, required=True, help='Select the output file.')
     parser.add_argument('--MVA_cut', default = -1., type=float, help='Choose the MVA cut.')
     parser.add_argument('--n_events', default = 0, type=int, help='Choose the number of events to process.')
-    parser.add_argument('--n_cpus', default = 8, type=int, help='Choose the number of cpus to use.')
+    parser.add_argument('--n_cpus', default = cfg.cpus_per_job, type=int, help='Choose the number of cpus to use.')
     parser.add_argument('--decay', required=True, type=str, help='Choose the decay to reconstruct.')
     parser.add_argument('--mva', default="", type=str, help='Path to the trained MVA ROOT file.')
     parser.add_argument("--training", default=False, action="store_const", const=True, help="prepare tuples for BDT training.")

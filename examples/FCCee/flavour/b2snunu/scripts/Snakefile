@@ -289,7 +289,7 @@ rule pickle:
     output: cfg.outputs+"root/pickled/{decay}/{event_type}/{decay_model}/{tuple_id}.pkl"
     log: cfg.logs+"pickled/{decay}/{event_type}/{decay_model}/{tuple_id}.log"
     #benchmark: cfg.benchmarks+"pickled/{decay}/{event_type}/{decay_model}/{tuple_id}.txt"
-    shell: "python {cfg.analysis_scripts}/pickler.py --input {input} --output {output} --decay {wildcards.decay} &> {log}"
+    shell: "python {cfg.analysis_scripts}/pickler.py --input {input} --output {output} --decay {wildcards.decay} --vars train_vars_vtx &> {log}"
 
 # test with python ./scripts/stage1.py --output ./test_output/stage1_Bd2KstNuNu.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91/events_132614370.root --decay Bd2KstNuNu --training
 # python ./scripts/stage1.py --output ./Bu2KNuNu_test.root --input root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bu2KNuNu/events_178153306.root --decay Bu2KNuNu --training

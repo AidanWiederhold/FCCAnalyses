@@ -40,13 +40,14 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
 
     #Bd -> Kst nu nu signal
     if(vars=="normal"):
-        vars_list = train_vars[decay]
+        vars_list = cfg.train_vars[decay]
     elif(vars=="vtx"):
-        vars_list = train_vars_vtx[decay]
+        vars_list = cfg.train_vars_vtx[decay]
     print("TRAINING VARS")
     print(vars_list)
 
-    total_bkg = 1e6
+    total_bkg = 1e5
+    total_sig = 1e5
 
     # count generated events
     bkgs = [bkg for bkg in cfg.branching_fractions.keys() if bkg!="signal"]
@@ -86,7 +87,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     print("Actual efficiencies")
     print(stage1_efficiencies)
 
-    df_sig = df_sig.sample(int(1e6), random_state=10)
+    df_sig = df_sig.sample(int(total_sig), random_state=10, replace=False)
     print(f"Number of signal events: {len(df_sig)}")
     print(f"{generated_events = }")
     for bkg in bkgs:
@@ -141,7 +142,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     print("Training model")
     bdt.fit(x, y, sample_weight=weights)
     data_dmatrix = xgb.DMatrix(data=x,label=y)
-    xgb_cv = cv(dtrain=data_dmatrix, params=config_dict, nfold=4, num_boost_round=50, early_stopping_rounds=10, metrics="auc", as_pandas=True, seed=123)
+    xgb_cv = xgb.cv(dtrain=data_dmatrix, params=config_dict, nfold=4, num_boost_round=50, early_stopping_rounds=10, metrics="auc", as_pandas=True, seed=123)
     print(xgb_cv.head())
 
     feature_importances = pd.DataFrame(bdt.feature_importances_,
@@ -160,7 +161,7 @@ def run(vars, signal_pkl, bbbar_pkl, ccbar_pkl, qqbar_pkl, signal_root, bbbar_ro
     roc_auc = auc(fpr, tpr)
 
     fig, ax = plt.subplots(figsize=(8,8))
-    plt.plot(tpr, 1-fpr, lw=1.5, color="k", label='ROC (area = %0.3f)'%(roc_auc))
+    plt.plot(tpr, 1-fpr, lw=1.5, color="k")#, label='ROC (area = %0.3f)'%(roc_auc))
     plt.plot([0.45, 1.], [0.45, 1.], linestyle="--", color="k", label='50/50')
     plt.xlim(0.45,1.)
     plt.ylim(0.45,1.)

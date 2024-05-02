@@ -10,12 +10,13 @@ def main():
     parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input', nargs="+", required=True, help='Select the input file(s).')
     parser.add_argument('--output', type=str, required=True, help='Select the output file.')
+    parser.add_argument('--decay', type=str, required=True, help='Select the decay channel, e.g "Bd2KstNuNu"')
     parser.add_argument('--vars', type=str, required=True, help='Select the variables to keep, e.g "train_vars_vtx", "train_vars_stage2"')
     args = parser.parse_args()
 
     assert( args.vars in train_var_lists.keys() )
 
-    run(args.input, args.output, vars_list=train_var_lists[args.vars])
+    run(args.input, args.output, vars_list=train_var_lists[args.vars][args.decay])
 
 if __name__ == '__main__':
     main()

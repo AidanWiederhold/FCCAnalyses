@@ -1,4 +1,5 @@
 use_tqdm = False
+cpus_per_job = 4
 
 analysis_scripts = "scripts/"
 outputs = "output/"
@@ -410,7 +411,7 @@ def chi2_to_misid_rate(value):
     return misid_rate
 
 #First stage BDT including event-level vars
-train_vars = ["EVT_ThrustEmin_E",
+train_vars = {decay: ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_E",
               "EVT_ThrustEmin_Echarged",
               "EVT_ThrustEmax_Echarged",
@@ -420,23 +421,23 @@ train_vars = ["EVT_ThrustEmin_E",
               "EVT_ThrustEmax_Ncharged",
               "EVT_ThrustEmin_Nneutral",
               "EVT_ThrustEmax_Nneutral"
-              ]
+              ] for decay in decays}
 
 #First stage BDT including event-level vars and vertex vars
 #This is the default list used in the analysis
-train_vars_vtx = [*train_vars, *[
+train_vars_vtx = {decay: [*train_vars[decay], *[
                   "EVT_NtracksPV",
                   "EVT_NVertex",
-                  "EVT_NKPi",
+                  f"EVT_N{decay_to_candidates[decay]}",
                   "EVT_ThrustEmin_NDV",
                   "EVT_ThrustEmax_NDV",
                   "EVT_dPV2DVmin",
                   "EVT_dPV2DVmax",
                   "EVT_dPV2DVave"
-                  ]]
+                  ]] for decay in decays}
 
 #Second stage training variables
-train_vars_stage2 = ["EVT_CandMass",
+train_vars_stage2 = {decay: ["EVT_CandMass",
                 "EVT_CandN",
                 "EVT_CandVtxFD",
                 "EVT_CandVtxChi2",
@@ -455,13 +456,13 @@ train_vars_stage2 = ["EVT_CandMass",
                 "EVT_DVz0_ave",
                 "EVT_PVmass",
                 "EVT_Nominal_B_E"
-               ]
+               ] for decay in decays}
 
-fit_cut_vars = [ "EVT_MVA1",
+fit_cut_vars = {decay: [ "EVT_MVA1",
                  "EVT_MVA2",
                  "EVT_ThrustDiff_E",
                  "EVT_CandMass"
-               ]
+               ] for decay in decays}
 
 train_var_lists = { "train_vars" : train_vars,
                     "train_vars_vtx" : train_vars_vtx,
