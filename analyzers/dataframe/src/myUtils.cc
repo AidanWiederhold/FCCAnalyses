@@ -1216,7 +1216,7 @@ ROOT::VecOps::RVec<edm4hep::TrackState> get_truetrack(ROOT::VecOps::RVec<int> in
 
     TVector3 momentum ( tlv.Px(),tlv.Py(),tlv.Pz());
 
-    TVectorD track_param = VertexFitterSimple::XPtoPar( vertexFB, momentum, charge );
+    TVectorD track_param = VertexingUtils::XPtoPar( vertexFB, momentum, charge );
 
 
     track.D0        = track_param[0] * 1e3 ; // from meters to mm
@@ -1268,7 +1268,7 @@ ROOT::VecOps::RVec<edm4hep::TrackState> get_pseudotrack(ROOT::VecOps::RVec<Verte
 
     TVector3 momentum ( pseudop.Px(),pseudop.Py(),pseudop.Pz());
 
-    TVectorD track_param = VertexFitterSimple::XPtoPar( vertexFB, momentum, pseudopq );
+    TVectorD track_param = VertexingUtils::XPtoPar( vertexFB, momentum, pseudopq );
 
 
     track.D0        = track_param[0] * 1e3 ; // from meters to mm
@@ -1313,7 +1313,7 @@ ROOT::VecOps::RVec<edm4hep::TrackState> getFCCAnalysesComposite_track(ROOT::VecO
 		       vertex.at(p.vertex).vertex.position.z * norm);
     TVector3 momentum ( p.particle.Px(),p.particle.Py(),p.particle.Pz());
 
-    TVectorD track_param = VertexFitterSimple::XPtoPar( vertexFB, momentum, p.charge );
+    TVectorD track_param = VertexingUtils::XPtoPar( vertexFB, momentum, p.charge );
 
 
     track.D0        = track_param[0] * 1e3 ; // from meters to mm
@@ -1789,6 +1789,58 @@ ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2KstNuNu(ROOT::VecOps::RVec<Ve
     comp.vertex = counter;
     comp.particle = build_tlv(recop,p.reco_ind);
     comp.charge = charge_pi+charge_k;
+
+    result.push_back(comp);
+    counter+=1;
+  }
+  return result;
+}
+
+ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Bd2Kstmm(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+								    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop){
+
+  ROOT::VecOps::RVec<FCCAnalysesComposite2> result = build_Bd2KstNuNu(vertex, recop);
+  return result;
+}
+
+ROOT::VecOps::RVec<FCCAnalysesComposite2> build_Lb2LbNuNu(ROOT::VecOps::RVec<VertexingUtils::FCCAnalysesVertex> vertex,
+								    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> recop){
+
+  ROOT::VecOps::RVec<FCCAnalysesComposite2> result;
+  int counter=0;
+  for (auto &p:vertex){
+    //not consider PV
+    if (p.vertex.primary==1){counter+=1;continue;}
+    //exactly 2 tracks
+    if (p.ntracks!=2){counter+=1;continue;}
+
+    //1 tracks id as proton
+    int charge_p=0;
+    int nobj_p=0;
+    for (auto &r:p.reco_ind){
+      if (recop.at(r).type==2212 ){
+	nobj_p+=1;
+	charge_p+=recop.at(r).charge;
+      }
+    }
+
+   //1 tracks id as pion
+    int charge_pi=0;
+    int nobj_pi=0;
+    for (auto &r:p.reco_ind){
+      if (recop.at(r).type==211){
+	nobj_pi+=1;
+	charge_pi+=recop.at(r).charge;
+      }
+    }
+    if (nobj_pi!=1){counter+=1; continue;}
+    if (nobj_p!=1){counter+=1; continue;}
+    if (charge_pi+charge_p!=0){counter+=1; continue;}
+
+    FCCAnalysesComposite2 comp;
+    comp.vertex = counter;
+    comp.particle = build_tlv(recop,p.reco_ind);
+    comp.charge = charge_pi+charge_p;
 
     result.push_back(comp);
     counter+=1;
