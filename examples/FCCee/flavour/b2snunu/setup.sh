@@ -23,4 +23,4 @@ make install
 cd ../../FCCAnalyses/examples/FCCee/flavour/b2snunu/
 
 #cd ./examples/FCCee/flavour/b2snunu
-#source ./pippa.sh $PWD/localPythonTools
+source ./pippa.sh $PWD/localPythonTools
