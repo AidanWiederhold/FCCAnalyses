@@ -1,48 +1,44 @@
 import sys
-import ROOT
-from array import array
+sys.path.append('/storage/epp2/phutmn/FCC_all/v090/FCCAnalyses/examples/FCCee/flavour/b2snunu/scripts')
+import config as cfg
 
-print ("Load cxx analyzers ... ",)
-ROOT.gSystem.Load("libedm4hep")
-ROOT.gSystem.Load("libpodio")
-ROOT.gSystem.Load("libawkward")
-ROOT.gSystem.Load("libawkward-cpu-kernels")
-ROOT.gSystem.Load("libFCCAnalyses")
+processList = {
+    #"p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu": {"fraction": cfg.signal_fraction, "chunks": cfg.chunks},
+    #"p8_ee_Zbb_ecm91":  {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
+    #"p8_ee_Zcc_ecm91":  {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
+    "p8_ee_Zss_ecm91": {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
+    "p8_ee_Zud_ecm91": {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
+}
 
-ROOT.gErrorIgnoreLevel = ROOT.kFatal
-_edm  = ROOT.edm4hep.ReconstructedParticleData()
-_pod  = ROOT.podio.ObjectID()
-_fcc  = ROOT.dummyLoader
+#prodTag = "FCCee/spring2021/IDEA"
+prodTag = "FCCee/winter2023/IDEA"
+outputDir = "outputs/FCCee/flavour/b2snunu/stage1"
 
-print ('edm4hep  ',_edm)
-print ('podio    ',_pod)
-print ('fccana   ',_fcc)
 
-class analysis():
+runBatch = False
+batchQueue = "longlunch"
+compGroup = "LHCb"
 
-    #__________________________________________________________
-    def __init__(self, inputlist, outname, ncpu):
-        self.outname = outname
-        if ".root" not in outname:
-            self.outname+=".root"
-        self.ncpu = ncpu
+#testFile = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_087450567.root"
+testFile = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_189565183.root"
+#testFile = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zuds_ecm91/events_171273643.root"
 
-        if ncpu>1: # MT and self.df.Range() is not allowed but MT must be enabled before constructing a df
-            ROOT.ROOT.EnableImplicitMT(ncpu) 
-        ROOT.EnableThreadSafety()
-        self.df = ROOT.RDataFrame("events", inputlist)
-        print ("Input dataframe initialised!")
-    #__________________________________________________________
-    def run(self, n_events, MVA_cut, decay, candidates, child_pdgid, parent_pdgid, training, misid_rate):
+class RDFanalysis():
+    def analysers(df):
         print("Running...")
-        MVAFilter=f"EVT_MVA1>{MVA_cut}"
+        candidates = "KPi"
+        decay = "Bd2KstNuNu"
+        parent_pdgid = 511
+        child_pdgid = 313
+        training = True
+        #MVAFilter=f"EVT_MVA1>{MVA_cut}"
 
-        if self.ncpu==1:
-            df2 = self.df.Range(0, n_events)
-        else:
-            df2 = self.df
+        #if self.ncpu==1:
+        #    df2 = self.df.Range(0, n_events)
+        #else:
+        #    df2 = self.df
         
-        df3 = (df2
+        df3 = (df
                #############################################
                ##          Aliases for # in python        ##
                #############################################
@@ -57,10 +53,6 @@ class analysis():
                #############################################               
                .Define("MC_PDG", "FCCAnalyses::MCParticle::get_pdg(Particle)")
                .Define("MC_n",   "int(MC_PDG.size())")
-               #.Define("MC_M1",  "FCCAnalyses::myUtils::get_MCMother1(Particle,Particle0)")
-               #.Define("MC_M2",  "FCCAnalyses::myUtils::get_MCMother2(Particle,Particle0)")
-               #.Define("MC_D1",  "FCCAnalyses::myUtils::get_MCDaughter1(Particle,Particle1)")
-               #.Define("MC_D2",  "FCCAnalyses::myUtils::get_MCDaughter2(Particle,Particle1)")
                .Define("MC_M1",  "FCCAnalyses::myUtils::getMC_parent(0,Particle,Particle0)")
                .Define("MC_M2",  "FCCAnalyses::myUtils::getMC_parent(1,Particle,Particle0)")
                .Define("MC_D1",  "FCCAnalyses::myUtils::getMC_daughter(0,Particle,Particle1)")
@@ -75,9 +67,9 @@ class analysis():
                .Define("MC_endvtx_z",   "FCCAnalyses::MCParticle::get_endPoint_z(Particle)")
                .Define("MC_p",   "FCCAnalyses::MCParticle::get_p(Particle)")
                .Define("MC_pt",  "FCCAnalyses::MCParticle::get_pt(Particle)")
-               .Define("MC_px",  "FCCAnalyses::MCParticle::get_pt(Particle)")
-               .Define("MC_py",  "FCCAnalyses::MCParticle::get_pt(Particle)")
-               .Define("MC_pz",  "FCCAnalyses::MCParticle::get_pt(Particle)")
+               .Define("MC_px",  "FCCAnalyses::MCParticle::get_px(Particle)")
+               .Define("MC_py",  "FCCAnalyses::MCParticle::get_py(Particle)")
+               .Define("MC_pz",  "FCCAnalyses::MCParticle::get_pz(Particle)")
                .Define("MC_e",   "FCCAnalyses::MCParticle::get_e(Particle)")
                .Define("MC_m",   "FCCAnalyses::MCParticle::get_mass(Particle)")
                .Define("MC_q",   "FCCAnalyses::MCParticle::get_charge(Particle)")
@@ -117,6 +109,7 @@ class analysis():
                ##              Build Reco Vertex          ##
                #############################################
                .Define("VertexObject", "FCCAnalyses::myUtils::get_VertexObject(MCVertexObject,ReconstructedParticles,EFlowTrack_1,MCRecoAssociations0,MCRecoAssociations1)")
+               #.Define("VertexObject",  "VertexFitterSimple::VertexFitter_Tk ( 1, EFlowTrack_1, true, 4.5, 20e-3, 300)")
 
 
                #############################################
@@ -125,15 +118,13 @@ class analysis():
                .Define("EVT_hasPV",    "FCCAnalyses::myUtils::hasPV(VertexObject)")
                .Define("EVT_NtracksPV", "float(FCCAnalyses::myUtils::get_PV_ntracks(VertexObject))")
                .Define("EVT_NVertex",   "float(VertexObject.size())")
-               .Filter("EVT_hasPV==1")
+               #.Filter("EVT_hasPV==1")
 
 
                #############################################
                ##          Build RECO P with PID          ##
                #############################################
-               #.Define("MisIDRate", misid_rate)
-               .Define("NoMisIDPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, 0.)")
-               .Define("RecoPartPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle, {misid_rate})")
+               .Define("RecoPartPID" ,f"FCCAnalyses::myUtils::PID(ReconstructedParticles, MCRecoAssociations0,MCRecoAssociations1,Particle)")
                
 
                #############################################
@@ -331,7 +322,14 @@ class analysis():
         else:
             df6 = df5
 
-        branchList = ROOT.vector('string')()
+        return df6
+
+    def output():
+        candidates = "KPi"
+        decay = "Bd2KstNuNu"
+        parent_pdgid = 511
+        child_pdgid = 313
+        training = True
         desired_branches = [
                 "MC_PDG","MC_M1","MC_M2","MC_n","MC_D1","MC_D2","MC_D3","MC_D4",
                 "MC_p","MC_pt","MC_px","MC_py","MC_pz","MC_eta","MC_phi",
@@ -349,7 +347,9 @@ class analysis():
                 "EVT_Thrust_Y",  "EVT_Thrust_YErr",
                 "EVT_Thrust_Z",  "EVT_Thrust_ZErr",
 
-                "EVT_NtracksPV", "EVT_NVertex", f"EVT_N{candidates}",
+                 "EVT_NtracksPV", 
+                 "EVT_NVertex",
+                 f"EVT_N{candidates}",
                 
                 "EVT_dPV2DVmin","EVT_dPV2DVmax","EVT_dPV2DVave",
 
@@ -367,10 +367,12 @@ class analysis():
                 "Vertex_d2PVErr", "Vertex_d2PVxErr", "Vertex_d2PVyErr", "Vertex_d2PVzErr",
                 "Vertex_mass",
                 "DV_d0","DV_z0",
+                "EVT_hasPV",
                 
                 f"True{candidates}_vertex", f"True{candidates}_d0", f"True{candidates}_z0", 
                 
-                f"{candidates}Candidates_mass", f"{candidates}Candidates_vertex", f"{candidates}Candidates_mcvertex", f"{candidates}Candidates_B",
+                f"{candidates}Candidates_mass", 
+                f"{candidates}Candidates_vertex", f"{candidates}Candidates_mcvertex", f"{candidates}Candidates_B",
                 f"{candidates}Candidates_truth",
                 f"{candidates}Candidates_px", f"{candidates}Candidates_py", f"{candidates}Candidates_pz", f"{candidates}Candidates_p", f"{candidates}Candidates_q",
                 f"{candidates}Candidates_d0",  f"{candidates}Candidates_z0",f"{candidates}Candidates_anglethrust",
@@ -384,89 +386,5 @@ class analysis():
                 ]
         if not training:
             desired_branches.append("EVT_MVA1")
-        for branchName in desired_branches:
-            branchList.push_back(branchName)
-        df6.Snapshot("events", self.outname, branchList)
+        return desired_branches
 
-if __name__ == "__main__":
-
-    print("Initialising...")
-
-    import argparse
-    parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--input',nargs="+", required=True, help='Select the input file(s).')
-    parser.add_argument('--output', type=str, required=True, help='Select the output file.')
-    parser.add_argument('--MVA_cut', default = -1., type=float, help='Choose the MVA cut.')
-    parser.add_argument('--n_events', default = 0, type=int, help='Choose the number of events to process.')
-    parser.add_argument('--n_cpus', default = 8, type=int, help='Choose the number of cpus to use.')
-    parser.add_argument('--decay', required=True, type=str, help='Choose the decay to reconstruct.')
-    parser.add_argument('--mva', default="", type=str, help='Path to the trained MVA ROOT file.')
-    parser.add_argument("--training", default=False, action="store_const", const=True, help="prepare tuples for BDT training.")
-    parser.add_argument('--PID_sep', default="0p0", type=str, help='Percentage of particles to misid')
-    args = parser.parse_args()
-
-    if not args.training:
-        assert(args.mva!="")
-        # TODO make the above take the BDT name according to the decay
-        ROOT.gInterpreter.ProcessLine(f'''
-        TMVA::Experimental::RBDT<> bdt("{args.decay}_BDT", "{args.mva}");
-        computeModel = TMVA::Experimental::Compute<18, float>(bdt);
-        ''')
-
-    input_files = ROOT.vector('string')()
-    if "*" in args.input:
-        import glob
-        file_list = glob.glob(args.input)
-        for file_name in file_list:
-            input_files.push_back(file_name)
-    else:
-        for inf in args.input:
-            input_files.push_back(inf)
-    n_events=args.n_events
-    if n_events==0:
-        for f in input_files:
-            tf=ROOT.TFile.Open(str(f),"READ")
-            tt=tf.Get("events")
-            n_events+=tt.GetEntries()
-        n_cpus=args.n_cpus
-    else:
-        print(f"WARNING: Cannot use multi-threading when running over a finite set of events. Setting n_cpus to 1.")
-        n_cpus=1
-
-    print("===============================STARTUP SUMMARY===============================")
-    print(f"Training Mode     : {args.training}")
-    print(f"Input File(s)     : {args.input}")
-    print(f"Output File       : {args.output}")
-    print(f"Events to process : {n_events}")
-    if not args.training:
-        print(f"MVA Cut           : {args.MVA_cut}")
-    print(f"Number of CPUs    : {n_cpus}")
-    print("=============================================================================")
-
-    from config import decay_to_candidates, decay_to_pdgids, chi2_to_misid_rate
-    candidates = decay_to_candidates[args.decay]
-    child_pdgid, parent_pdgid = decay_to_pdgids[args.decay]
-    import time
-    start_time = time.time()
-    analysis = analysis(input_files, args.output, n_cpus)
-    misid_rate = chi2_to_misid_rate(float(args.PID_sep.replace("p", ".")))
-    analysis.run(n_events, args.MVA_cut, args.decay, candidates, child_pdgid, parent_pdgid, args.training, misid_rate)
-
-    elapsed_time = time.time() - start_time
-    print  ("==============================COMPLETION SUMMARY=============================")
-    print  ("Elapsed time (H:M:S)     :  ",time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-    print  ("Events Processed/Second  :  ",int(n_events/elapsed_time))
-    print  ("Total Events Processed   :  ",int(n_events))
-    print  ("=============================================================================")
-
-    
-    outf = ROOT.TFile( args.output, "update" )
-    meta = ROOT.TTree( "metadata", "metadata informations" )
-    n = array( "i", [ 0 ] )
-    meta.Branch( "eventsProcessed", n, "eventsProcessed/I" )
-    n[0]=n_events
-    meta.Fill()
-    p = ROOT.TParameter(int)( "eventsProcessed", n[0])
-    p.Write()
-    outf.Write()
-    outf.Close()
