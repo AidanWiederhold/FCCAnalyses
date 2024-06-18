@@ -4,9 +4,10 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser(description="Applies preselection cuts", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--inclusive_bbbar',nargs="+", required=True, help='Select the input file(s).')
-parser.add_argument('--inclusive_ccbar',nargs="+", required=True, help='Select the input file(s).')
-parser.add_argument('--inclusive_qqbar',nargs="+", required=True, help='Select the input file(s).')
+parser.add_argument('--bb',nargs="+", required=True, help='Select the input file(s).')
+parser.add_argument('--cc',nargs="+", required=True, help='Select the input file(s).')
+parser.add_argument('--ss',nargs="+", required=True, help='Select the input file(s).')
+parser.add_argument('--ud',nargs="+", required=True, help='Select the input file(s).')
 parser.add_argument('--signal',nargs="+", required=True, help='Select the input file(s).')
 parser.add_argument('--output', type=str, required=True, help='Select the output file.')
 #parser.add_argument('--decay', type=str, required=True, help='Select the reconstructed decay.')
