@@ -12,8 +12,16 @@ eos_cache = "eos_cache_PID_3.json"
 
 MC = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/"
 
-signal_fraction = 0.0005
-bkg_fraction = 0.0001
+outputDir = "/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
+
+batch = True
+
+if batch:
+    signal_fraction = 0.2
+    bkg_fraction = 0.05
+else:
+    signal_fraction = 0.0005
+    bkg_fraction = 0.0001
 chunks = 100
 
 decays = ["Bd2KstNuNu","Bd2Kstmm","Bs2PhiNuNu","Bd2KsNuNu","Lb2LbNuNu"]#, "Bu2KNuNu"]

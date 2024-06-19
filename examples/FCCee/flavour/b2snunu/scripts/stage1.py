@@ -1,23 +1,24 @@
+import os
 import sys
-sys.path.append('/storage/epp2/phutmn/FCC_all/v090/FCCAnalyses/examples/FCCee/flavour/b2snunu/scripts')
+sys.path.append(f'/afs/cern.ch/work/a/aiwieder/private/FCC/FCCAnalyses/examples/FCCee/flavour/b2snunu/scripts')
 import config as cfg
 
 processList = {
-    #"p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu": {"fraction": cfg.signal_fraction, "chunks": cfg.chunks},
-    #"p8_ee_Zbb_ecm91":  {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
-    #"p8_ee_Zcc_ecm91":  {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
+    "p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu": {"fraction": cfg.signal_fraction, "chunks": cfg.chunks},
+    "p8_ee_Zbb_ecm91":  {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
+    "p8_ee_Zcc_ecm91":  {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
     "p8_ee_Zss_ecm91": {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
     "p8_ee_Zud_ecm91": {"fraction": cfg.bkg_fraction, "chunks": cfg.chunks},
 }
 
 #prodTag = "FCCee/spring2021/IDEA"
 prodTag = "FCCee/winter2023/IDEA"
-outputDir = "outputs/FCCee/flavour/b2snunu/stage1"
+outputDir = f"{cfg.outputDir}stage1"
 
 
-runBatch = False
+runBatch = cfg.batch
 batchQueue = "longlunch"
-compGroup = "LHCb"
+compGroup = "group_u_FCC.local_gen"
 
 #testFile = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_087450567.root"
 testFile = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA/p8_ee_Zbb_ecm91_EvtGen_Bd2KstNuNu/events_189565183.root"
