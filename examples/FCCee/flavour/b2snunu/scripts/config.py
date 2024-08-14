@@ -1,40 +1,29 @@
 use_tqdm = False
 
-analysis_scripts = "scripts/"
-outputs = "output_new_var/"
-plots = f"{outputs}plots/"
-snakemake_flags = f"{outputs}snakemake_flags/"
-logs = f"logs_new_var/"
-benchmarks = f"benchmarks_new_var/"
-input_mc = f"{outputs}/input_mc/"
-envs = "../envs/"
-eos_cache = "eos_cache_PID_3.json"
-
 MC = "root://eospublic.cern.ch//eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/"
 
-outputDir = "/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
+analysis_scripts = "scripts/"
+outputs = "/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
+plots = f"{outputs}plots/"
+snakemake_flags = f"{outputs}snakemake_flags/"
+logs = f"logs/"
+benchmarks = f"benchmarks/"
+input_mc = f"{outputs}/input_mc/"
+envs = "../envs/"
+eos_cache = "eos_cache.json"
 
-batch = True
+batch = False
 
-if batch:
-    signal_fraction = 0.2
-    bkg_fraction = 0.05
-else:
-    signal_fraction = 0.0005
-    bkg_fraction = 0.0001
+#if batch:
+#    signal_fraction = 0.2
+#    bkg_fraction = 0.05
+#else:
+signal_fraction = 0.0005
+bkg_fraction = 0.0001
 chunks = 100
 
 decays = ["Bd2KstNuNu","Bd2Kstmm","Bs2PhiNuNu","Bd2KsNuNu","Lb2LbNuNu"]#, "Bu2KNuNu"]
 #decays = ["Bd2KsNuNu", "Lb2LbNuNu"]
-PID_seps = ["0p0", "0p5", "1p0", "1p5", "2p0", "2p5", "3p0", "4p0", "5p0", "10p0"]
-PID_sep_to_decay = {}
-for PID_sep in PID_seps:
-    if PID_sep == "0p0":
-        PID_sep_to_decay[PID_sep] = decays
-    else:
-        PID_sep_to_decay[PID_sep] = ["Bd2KstNuNu", "Bs2PhiNuNu"]
-
-#PID_seps = [0,0.5,1,1.5,2,2.5,3,4,5]
 
 event_types = {
     "p8_ee_Zbb_ecm91": ["inclusive", "signal"],
@@ -414,14 +403,14 @@ def list_to_constraints(l):
     constraints = f"{constraints})"
     return constraints
 
-def chi2_to_misid_rate(value):
-    ## i think this is right but i may have made a mistake
-    import numpy as np
-    from scipy.stats import chi2 # perhaps this is already too many
-    if value=="10p0":
-        return 0.
-    misid_rate = (1-chi2.cdf(value**2,1))/2
-    return misid_rate
+# def chi2_to_misid_rate(value):
+#     ## i think this is right but i may have made a mistake
+#     import numpy as np
+#     from scipy.stats import chi2 # perhaps this is already too many
+#     if value=="10p0":
+#         return 0.
+#     misid_rate = (1-chi2.cdf(value**2,1))/2
+#     return misid_rate
 
 #First stage BDT including event-level vars
 train_vars = {decay: ["EVT_ThrustEmin_E",

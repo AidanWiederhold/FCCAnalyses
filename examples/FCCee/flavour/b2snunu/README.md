@@ -10,7 +10,9 @@ python -m venv b2snunu_env
 source ./b2snunu_env/bin/activate
 pip install -r ./examples/FCCee/flavour/b2snunu/env.txt
 fccanalysis build
-mkdir -p ./outputs/logs
+
+export ANALYSISOUTPUT="/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
+mkdir -p ${ANALYSISOUTPUT}logs
 ```
 
 The first line forces the `fccanalysis` pin to be the version this analysis was developed under.
@@ -20,6 +22,9 @@ To get a newer version you can simply skip that line and do `fccanalysis pin` af
 ```bash
 source setup.sh
 source ./b2snunu_env/bin/activate
+
+export ANALYSISOUTPUT="/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
+mkdir -p ${ANALYSISOUTPUT}logs
 ```
 
 # to apply changes to fccanalysis source code (in the FCCAnalyses directory)

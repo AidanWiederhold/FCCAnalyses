@@ -5,5 +5,5 @@ source ./b2snunu_env/bin/activate
 pip install -r ./examples/FCCee/flavour/b2snunu/env.txt
 fccanalysis build
 
-ANALYSISOUTPUT="/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
+export ANALYSISOUTPUT="/eos/experiment/fcc/ee/analyses_storage/flavor/b2snunu/revival/"
 mkdir -p ${ANALYSISOUTPUT}logs
